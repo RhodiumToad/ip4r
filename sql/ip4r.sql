@@ -2020,4 +2020,60 @@ select a / 4, count(*) from ipaddrs group by 1 order by 2,1;
 select a4 / 4, count(*) from ipaddrs group by 1 order by 2,1;
 select a6 / 4, count(*) from ipaddrs group by 1 order by 2,1;
 
+-- comparison ops
+
+select
+  sum((r < '2000::/48')::integer) as s_lt,
+  sum((r <= '2000::/48')::integer) as s_le,
+  sum((r = '2000::/48')::integer) as s_eq,
+  sum((r >= '2000::/48')::integer) as s_ge,
+  sum((r > '2000::/48')::integer) as s_gt,
+  sum((r <> '2000::/48')::integer) as s_ne
+  from ipranges;
+
+select
+  sum((r6 < '2000::/48')::integer) as s_lt,
+  sum((r6 <= '2000::/48')::integer) as s_le,
+  sum((r6 = '2000::/48')::integer) as s_eq,
+  sum((r6 >= '2000::/48')::integer) as s_ge,
+  sum((r6 > '2000::/48')::integer) as s_gt,
+  sum((r6 <> '2000::/48')::integer) as s_ne
+  from ipranges;
+
+select
+  sum((r4 < '172.16.0.0/28')::integer) as s_lt,
+  sum((r4 <= '172.16.0.0/28')::integer) as s_le,
+  sum((r4 = '172.16.0.0/28')::integer) as s_eq,
+  sum((r4 >= '172.16.0.0/28')::integer) as s_ge,
+  sum((r4 > '172.16.0.0/28')::integer) as s_gt,
+  sum((r4 <> '172.16.0.0/28')::integer) as s_ne
+  from ipranges;
+
+select
+  sum((a < '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_lt,
+  sum((a <= '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_le,
+  sum((a = '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_eq,
+  sum((a >= '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_ge,
+  sum((a > '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_gt,
+  sum((a <> '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_ne
+  from ipaddrs;
+
+select
+  sum((a6 < '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_lt,
+  sum((a6 <= '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_le,
+  sum((a6 = '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_eq,
+  sum((a6 >= '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_ge,
+  sum((a6 > '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_gt,
+  sum((a6 <> '8ecc:14db:7aba:bbde:f2a7:c4bc:7a1e:c8c1')::integer) as s_ne
+  from ipaddrs;
+
+select
+  sum((a4 < '104.175.11.72')::integer) as s_lt,
+  sum((a4 <= '104.175.11.72')::integer) as s_le,
+  sum((a4 = '104.175.11.72')::integer) as s_eq,
+  sum((a4 >= '104.175.11.72')::integer) as s_ge,
+  sum((a4 > '104.175.11.72')::integer) as s_gt,
+  sum((a4 <> '104.175.11.72')::integer) as s_ne
+  from ipaddrs;
+
 -- end
