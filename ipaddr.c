@@ -229,7 +229,7 @@ ipaddr_recv(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid address family in external IP value")));
 	bits = pq_getmsgbyte(buf);
-	if (bits != ip_maxbits(af))
+	if (bits != ipr_af_maxbits(af))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
@@ -266,7 +266,7 @@ ipaddr_send(PG_FUNCTION_ARGS)
 
     pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
-	pq_sendbyte(&buf, ip_maxbits(af));
+	pq_sendbyte(&buf, ipr_af_maxbits(af));
 	pq_sendbyte(&buf, 1);
 	pq_sendbyte(&buf, ip_sizeof(af));
 

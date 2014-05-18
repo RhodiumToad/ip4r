@@ -255,7 +255,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid address family in external IPR value")));
 	bits = pq_getmsgbyte(buf);
-	if (bits != 255 && bits > ip_maxbits(af))
+	if (bits != 255 && bits > ipr_af_maxbits(af))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
@@ -270,7 +270,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 			break;
 
 		case PGSQL_AF_INET:
-			if (nbytes == sizeof(IP4) && bits <= ip_maxbits(PGSQL_AF_INET))
+			if (nbytes == sizeof(IP4) && bits <= ipr_af_maxbits(PGSQL_AF_INET))
 			{
 				ipr.ip4r.lower = (IP4) pq_getmsgint(buf, sizeof(IP4));
 				ipr.ip4r.upper = ipr.ip4r.lower | hostmask(bits);
@@ -293,7 +293,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 				ipr.ip6r.upper.bits[1] = ~(uint64)0;
 				PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6,&ipr));
 			}
-			else if (nbytes == sizeof(IP6) && bits <= ip_maxbits(PGSQL_AF_INET6))
+			else if (nbytes == sizeof(IP6) && bits <= ipr_af_maxbits(PGSQL_AF_INET6))
 			{
 				ipr.ip6r.lower.bits[0] = (uint64) pq_getmsgint64(buf);
 				ipr.ip6r.lower.bits[1] = (uint64) pq_getmsgint64(buf);
@@ -340,7 +340,7 @@ iprange_send(PG_FUNCTION_ARGS)
 
     pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
-	pq_sendbyte(&buf, ip_maxbits(af));
+	pq_sendbyte(&buf, ipr_af_maxbits(af));
 	pq_sendbyte(&buf, 1);
 
 	switch (af)
@@ -350,7 +350,7 @@ iprange_send(PG_FUNCTION_ARGS)
 			break;
 
 		case PGSQL_AF_INET:
-			if (bits <= ip_maxbits(PGSQL_AF_INET))
+			if (bits <= ipr_af_maxbits(PGSQL_AF_INET))
 			{
 				pq_sendbyte(&buf, sizeof(IP4));
 				pq_sendint(&buf, ipr.ip4r.lower, sizeof(IP4));
@@ -370,7 +370,7 @@ iprange_send(PG_FUNCTION_ARGS)
 				pq_sendbyte(&buf, sizeof(uint64));
 				pq_sendint64(&buf, ipr.ip6r.lower.bits[0]);
 			}
-			else if (bits <= ip_maxbits(PGSQL_AF_INET6))
+			else if (bits <= ipr_af_maxbits(PGSQL_AF_INET6))
 			{
 				pq_sendbyte(&buf, sizeof(IP6));
 				pq_sendint64(&buf, ipr.ip6r.lower.bits[0]);
@@ -457,7 +457,7 @@ iprange_cast_from_cidr(PG_FUNCTION_ARGS)
 	unsigned char *p = in->ipaddr;
 	IPR ipr;
 
-    if (INET_IS_CIDR(in) && in->bits <= ip_maxbits(in->family))
+    if (INET_IS_CIDR(in) && in->bits <= ipr_af_maxbits(in->family))
 	{
 		switch (in->family)
 		{
@@ -519,7 +519,7 @@ iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 
 		case PGSQL_AF_INET:
 			bits = masklen(ipr.ip4r.lower, ipr.ip4r.upper);
-			if (bits > ip_maxbits(PGSQL_AF_INET))
+			if (bits > ipr_af_maxbits(PGSQL_AF_INET))
 				PG_RETURN_NULL();
 
 			res = palloc0(VARHDRSZ + sizeof(inet_struct));
@@ -542,7 +542,7 @@ iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 
 		case PGSQL_AF_INET6:
 			bits = masklen6(&ipr.ip6r.lower, &ipr.ip6r.upper);
-			if (bits > ip_maxbits(PGSQL_AF_INET6))
+			if (bits > ipr_af_maxbits(PGSQL_AF_INET6))
 				PG_RETURN_NULL();
 
 			res = palloc0(VARHDRSZ + sizeof(inet_struct));
@@ -773,7 +773,7 @@ iprange_net_prefix_internal(int af, IP4 ip4, IP6 *ip6, int pfxlen)
 {
 	IPR res;
 
-    if (pfxlen < 0 || pfxlen > ip_maxbits(af))
+    if (pfxlen < 0 || pfxlen > ipr_af_maxbits(af))
     {
         ereport(ERROR,
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),

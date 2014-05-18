@@ -56,7 +56,7 @@ typedef union IP {
 	IP6 ip6;
 } IP;
 
-#define ip_maxbits(af_) ((af_) == PGSQL_AF_INET ? 32 : 128)
+#define ipr_af_maxbits(af_) ((af_) == PGSQL_AF_INET ? 32 : 128)
 #define ip_sizeof(af_) ((af_) == PGSQL_AF_INET ? sizeof(IP4) : sizeof(IP6))
 #define ipr_sizeof(af_) ((af_) == PGSQL_AF_INET ? sizeof(IP4R) : sizeof(IP6R))
 
