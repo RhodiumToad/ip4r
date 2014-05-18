@@ -1061,7 +1061,7 @@ iprange_lt(PG_FUNCTION_ARGS)
     PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) < 0 );
 }
 
-PG_FUNCTION_INFO_V1(iprange_l3);
+PG_FUNCTION_INFO_V1(iprange_le);
 Datum
 iprange_le(PG_FUNCTION_ARGS)
 {
