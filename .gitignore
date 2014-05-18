@@ -18,3 +18,7 @@ objfiles.txt
 lcov.info
 coverage/
 /results/
+/ip4r.sql
+/ip4r.sql.in
+/sql/ip4r-legacy.sql
+/expected/ip4r-legacy.out

@@ -5,7 +5,8 @@ IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 CHANGES from version 1.x:
 =========================
 
- * 9.1+ extension packaging mechanism is required for this version
+ * 9.1+ extension packaging mechanism is the default for this version
+   (use NO_EXTENSION=1 to build on pre-9.1 or without packaging)
 
  * New types for ip6, ip6r, ipaddress, iprange
 
@@ -22,6 +23,10 @@ If upgrading from ip4r-1.x, use:
 
 CREATE EXTENSION ip4r FROM unpackaged1;
 
+PRE-9.1 SYSTEMS
+===============
+
+On versions before 9.1, or to build without extension packaging, use the
 
 RATIONALE
 =========
