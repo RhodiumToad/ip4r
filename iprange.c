@@ -236,7 +236,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 {
     StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
     IPR ipr;
-	unsigned af, bits, flag, nbytes;
+	unsigned af, bits, nbytes;
 
 	/* 
 	 * This isn't quite the same format as inet/cidr but we keep reasonably
@@ -259,7 +259,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
-	flag = pq_getmsgbyte(buf);  /* ignored */
+	(void) pq_getmsgbyte(buf);  /* ignore flag */
 	nbytes = pq_getmsgbyte(buf);
 
 	switch (af)
