@@ -158,21 +158,6 @@ make_text(char *str, int len)
     return ret;
 }
 
-static inline
-void
-set_text_len(text *txt, int len)
-{
-    if ((len + VARHDRSZ) < VARSIZE(txt))
-		SET_VARSIZE(txt, len + VARHDRSZ);
-}
-
-static inline
-int
-get_text_len(text *txt)
-{
-    return VARSIZE(txt) - VARHDRSZ;
-}
-
 /*
 ** Input/Output routines
 */
