@@ -158,21 +158,6 @@ make_text(char *str, int len)
     return ret;
 }
 
-static inline
-void
-set_text_len(text *txt, int len)
-{
-    if ((len + VARHDRSZ) < VARSIZE(txt))
-		SET_VARSIZE(txt, len + VARHDRSZ);
-}
-
-static inline
-int
-get_text_len(text *txt)
-{
-    return VARSIZE(txt) - VARHDRSZ;
-}
-
 /*
 ** Input/Output routines
 */
@@ -1127,7 +1112,7 @@ iprange_overlaps_internal(Datum d1, Datum d2)
 				iprange_internal_error();
 		}
 	}
-	else if (af1 != af2)
+	else
 		retval = (af1 == 0) || (af2 == 0);
 
 	if ((Pointer)ipp1 != DatumGetPointer(d1))
@@ -1169,7 +1154,7 @@ iprange_contains_internal(Datum d1, Datum d2, bool eqval)
 				iprange_internal_error();
 		}
 	}
-	else if (af1 != af2)
+	else
 		retval = (af1 == 0);
 
 	if ((Pointer)ipp1 != DatumGetPointer(d1))
@@ -1208,7 +1193,7 @@ iprange_contains_ip_internal(Datum d1, int af2, IP4 ip4, IP6 *ip6)
 				iprange_internal_error();
 		}
 	}
-	else if (af1 != af2)
+	else
 		retval = (af1 == 0);
 
 	if ((Pointer)ipp1 != DatumGetPointer(d1))
