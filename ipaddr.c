@@ -219,7 +219,7 @@ ipaddr_recv(PG_FUNCTION_ARGS)
 {
     StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
 	IP ip;
-	int af, bits, flag, nbytes;
+	int af, bits, nbytes;
 
 	/* we copy the external format used by inet/cidr, just because. */
 
@@ -233,7 +233,7 @@ ipaddr_recv(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
-	flag = pq_getmsgbyte(buf);  /* ignored */
+	(void) pq_getmsgbyte(buf);  /* ignore flag */
 	nbytes = pq_getmsgbyte(buf);
 	if (nbytes*8 != bits)
 		ereport(ERROR,
