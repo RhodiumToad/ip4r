@@ -17,7 +17,7 @@ UPGRADING
 
 If upgrading from ip4r-2.0 installed outside the extension mechanism, use:
 
-CREATE EXTENSION ip4r FROM unpackaged2.0;
+CREATE EXTENSION ip4r FROM "unpackaged2.0";
 
 If upgrading from ip4r-1.x, use:
 
