@@ -237,11 +237,11 @@ CREATE CAST (ip6r as iprange) WITH FUNCTION iprange(ip6r) AS IMPLICIT;
 
 CREATE CAST (ipaddress as iprange) WITH FUNCTION iprange(ipaddress) AS IMPLICIT;
 
-CREATE CAST (ipaddress as ip4) WITH FUNCTION ip4(ipaddress);
-CREATE CAST (ipaddress as ip6) WITH FUNCTION ip6(ipaddress);
+CREATE CAST (ipaddress as ip4) WITH FUNCTION ip4(ipaddress) AS ASSIGNMENT;
+CREATE CAST (ipaddress as ip6) WITH FUNCTION ip6(ipaddress) AS ASSIGNMENT;
 
-CREATE CAST (iprange as ip4r) WITH FUNCTION ip4r(iprange);
-CREATE CAST (iprange as ip6r) WITH FUNCTION ip6r(iprange);
+CREATE CAST (iprange as ip4r) WITH FUNCTION ip4r(iprange) AS ASSIGNMENT;
+CREATE CAST (iprange as ip6r) WITH FUNCTION ip6r(iprange) AS ASSIGNMENT;
 
 -- ----------------------------------------------------------------------
 -- Constructor functions
