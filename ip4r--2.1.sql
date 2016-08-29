@@ -3,10 +3,10 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION ip4r" to load this file. \quit
 
--- ---------------------------------------------------------------------- 
+-- ----------------------------------------------------------------------
 -- Type definitions
 
--- type creation is needlessly chatty 
+-- type creation is needlessly chatty
 
 CREATE TYPE ip4;
 
@@ -98,7 +98,7 @@ CREATE TYPE iprange (
 
 COMMENT ON TYPE iprange IS 'IPv4 or IPv6 range';
 
--- ---------------------------------------------------------------------- 
+-- ----------------------------------------------------------------------
 -- Cast functions (inward)
 
 CREATE FUNCTION ip4(bigint) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_bigint' LANGUAGE C IMMUTABLE STRICT;
@@ -646,7 +646,7 @@ CREATE OPERATOR CLASS btree_iprange_ops DEFAULT FOR TYPE iprange USING btree AS
        OPERATOR	5	> ,
        FUNCTION	1	iprange_cmp(iprange, iprange);
 
--- ---------------------------------------------------------------------- 
+-- ----------------------------------------------------------------------
 -- Hash index
 
 -- the hash index definitions are needed for hashagg, hashjoin, hash-distinct, hashsetop
@@ -788,4 +788,4 @@ DO $s$
   END;
 $s$;
 
--- end 
+-- end
