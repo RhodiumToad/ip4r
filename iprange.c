@@ -5,6 +5,16 @@
 #include "ip4r_funcs.h"
 #include "ip6r_funcs.h"
 
+/*
+ * Some C compilers including GCC really get confused by the use of the IP and
+ * IPR unions, generating a lot of completely spurious "may be used
+ * uninitialized" warnings. The various uses of IP*_INITIALIZER in this file
+ * ought to be unnecessary; so this macro is used to make them conditional for
+ * ease of experimentation.
+ */
+
+#define XINIT(_i) = _i
+
 static void iprange_internal_error(void) __attribute__((noreturn,noinline));
 static void iprange_af_mismatch(void) __attribute__((noreturn,noinline));
 
@@ -135,28 +145,6 @@ IPR_P ipr_pack(int af, IPR *val)
 /**************************************************************************/
 /* This part handles all aspects of postgres interfacing.
  */
-
-
-/* end of version dependencies */
-
-
-/*
-  #define GIST_DEBUG
-  #define GIST_QUERY_DEBUG
-*/
-
-static
-text *
-make_text(char *str, int len)
-{
-    text *ret = (text *) palloc(len + VARHDRSZ);
-    SET_VARSIZE(ret, len + VARHDRSZ);
-    if (str)
-        memcpy(VARDATA(ret), str, len);
-    else
-        memset(VARDATA(ret), 0, len);
-    return ret;
-}
 
 /*
 ** Input/Output routines
@@ -396,7 +384,7 @@ iprange_cast_to_text(PG_FUNCTION_ARGS)
 	{
 		case 0:
 		{
-			text *out = make_text("-",1);
+			text *out = cstring_to_text_with_len("-",1);
 			PG_RETURN_TEXT_P(out);
 		}
 
@@ -442,7 +430,7 @@ iprange_cast_from_cidr(PG_FUNCTION_ARGS)
 	unsigned char *p = in->ipaddr;
 	IPR ipr;
 
-    if (INET_IS_CIDR(in) && in->bits <= ipr_af_maxbits(in->family))
+    if (in->bits <= ipr_af_maxbits(in->family))
 	{
 		switch (in->family)
 		{
@@ -511,7 +499,6 @@ iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 			SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 4);
 
 			in = ((inet_struct *)VARDATA(res));
-			INET_INIT_CIDR(in);
 			in->bits = bits;
 			in->family = PGSQL_AF_INET;
 			{
@@ -534,7 +521,6 @@ iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 			SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 16);
 
 			in = ((inet_struct *)VARDATA(res));
-			INET_INIT_CIDR(in);
 			in->bits = bits;
 			in->family = PGSQL_AF_INET6;
 			{
@@ -873,8 +859,8 @@ iprange_net_mask(PG_FUNCTION_ARGS)
 {
     IP_P ipp = PG_GETARG_IP_P(0);
     IP_P maskp = PG_GETARG_IP_P(1);
-	IP ip;
-	IP mask;
+	IP ip XINIT(IP_INITIALIZER);
+	IP mask XINIT(IP_INITIALIZER);
 	int af1 = ip_unpack(ipp,&ip); 
 	int af2 = ip_unpack(maskp,&mask); 
 
@@ -995,8 +981,8 @@ iprange_cmp_internal(Datum d1, Datum d2)
 {
 	IPR_P ipp1 = DatumGetIPR_P(d1);
 	IPR_P ipp2 = DatumGetIPR_P(d2);
-	IPR ipr1;
-	IPR ipr2;
+	IPR ipr1 XINIT(IPR_INITIALIZER);
+	IPR ipr2 XINIT(IPR_INITIALIZER);
 	int af1 = ipr_unpack(ipp1, &ipr1);
 	int af2 = ipr_unpack(ipp2, &ipr2);
 	int retval = 0;
@@ -1018,7 +1004,7 @@ iprange_cmp_internal(Datum d1, Datum d2)
 			case PGSQL_AF_INET6:
 				if (ip6r_lessthan(&ipr1.ip6r,&ipr2.ip6r))
 					retval = -1;
-				if (ip6r_lessthan(&ipr2.ip6r,&ipr1.ip6r))
+				else if (ip6r_lessthan(&ipr2.ip6r,&ipr1.ip6r))
 					retval = 1;
 				break;
 
@@ -1086,8 +1072,8 @@ iprange_overlaps_internal(Datum d1, Datum d2)
 {
 	IPR_P ipp1 = DatumGetIPR_P(d1);
 	IPR_P ipp2 = DatumGetIPR_P(d2);
-	IPR ipr1;
-	IPR ipr2;
+	IPR ipr1 XINIT(IPR_INITIALIZER);
+	IPR ipr2 XINIT(IPR_INITIALIZER);
 	int af1 = ipr_unpack(ipp1, &ipr1);
 	int af2 = ipr_unpack(ipp2, &ipr2);
 	bool retval;
@@ -1128,8 +1114,8 @@ iprange_contains_internal(Datum d1, Datum d2, bool eqval)
 {
 	IPR_P ipp1 = DatumGetIPR_P(d1);
 	IPR_P ipp2 = DatumGetIPR_P(d2);
-	IPR ipr1;
-	IPR ipr2;
+	IPR ipr1 XINIT(IPR_INITIALIZER);
+	IPR ipr2 XINIT(IPR_INITIALIZER);
 	int af1 = ipr_unpack(ipp1, &ipr1);
 	int af2 = ipr_unpack(ipp2, &ipr2);
 	bool retval;
@@ -1169,7 +1155,7 @@ static int
 iprange_contains_ip_internal(Datum d1, int af2, IP4 ip4, IP6 *ip6)
 {
 	IPR_P ipp1 = DatumGetIPR_P(d1);
-	IPR ipr1;
+	IPR ipr1 XINIT(IPR_INITIALIZER);
 	int af1 = ipr_unpack(ipp1, &ipr1);
 	bool retval;
 
@@ -1251,7 +1237,7 @@ Datum
 iprange_contains_ip(PG_FUNCTION_ARGS)
 {
 	IP_P ipp = PG_GETARG_IP_P(1);
-	IP ip;
+	IP ip XINIT(IP_INITIALIZER);
 	int af = ip_unpack(ipp,&ip);
 	bool retval = iprange_contains_ip_internal(PG_GETARG_DATUM(0), af, ip.ip4, &ip.ip6);
 
@@ -1296,7 +1282,7 @@ Datum
 iprange_ip_contained_by(PG_FUNCTION_ARGS)
 {
 	IP_P ipp = PG_GETARG_IP_P(0);
-	IP ip;
+	IP ip XINIT(IP_INITIALIZER);
 	int af = ip_unpack(ipp,&ip);
 	bool retval = iprange_contains_ip_internal(PG_GETARG_DATUM(1), af, ip.ip4, &ip.ip6);
 
@@ -1487,6 +1473,7 @@ Datum gipr_penalty(PG_FUNCTION_ARGS);
 Datum gipr_picksplit(PG_FUNCTION_ARGS);
 Datum gipr_union(PG_FUNCTION_ARGS);
 Datum gipr_same(PG_FUNCTION_ARGS);
+Datum gipr_fetch(PG_FUNCTION_ARGS);
 
 typedef struct {
 	int32 vl_len_;
@@ -1547,6 +1534,13 @@ gipr_decompress(PG_FUNCTION_ARGS)
     PG_RETURN_POINTER(retval);
 }
 
+PG_FUNCTION_INFO_V1(gipr_fetch);
+Datum
+gipr_fetch(PG_FUNCTION_ARGS)
+{
+    PG_RETURN_POINTER(PG_GETARG_POINTER(0));
+}
+
 
 /*
 ** The GiST Consistent method for IP ranges
@@ -1562,7 +1556,7 @@ gipr_consistent(PG_FUNCTION_ARGS)
     GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
     IPR_P query = (IPR_P) PG_GETARG_POINTER(1);
     StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
-    bool *recheck = GIST_RECHECK_ARG;
+    bool *recheck = (bool *) PG_GETARG_POINTER(4);
     IPR_KEY *key = (IPR_KEY *) DatumGetPointer(entry->key);
     bool retval;
 

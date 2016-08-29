@@ -8101,6 +8101,28 @@ select * from ipaddrs a join ipranges r on (r.r6 >>= a.a6) order by a6,r6;
  e199:2ea0:f3b4:3a31:5d15:dfc9:68cd:c948 |    | e199:2ea0:f3b4:3a31:5d15:dfc9:68cd:c948 | e104:d364:b55e:bf80:97f3:cf03:61ed:c6ef-e1b7:f280:7b4a:2a4:2e0e:c372:f0ab:158   |    | e104:d364:b55e:bf80:97f3:cf03:61ed:c6ef-e1b7:f280:7b4a:2a4:2e0e:c372:f0ab:158
 (60 rows)
 
+-- index-only, on versions that support it:
+vacuum ipranges;
+select r from ipranges where r >>= '5555::' order by r;
+                                       r                                        
+--------------------------------------------------------------------------------
+ -
+ 5538:b6cb:ac50:bafe:dcd4:19e6:9ed0:2f2d-55f1:14f:6870:73ba:d803:ba0e:b968:d45e
+(2 rows)
+
+select r6 from ipranges where r6 >>= '5555::' order by r6;
+                                       r6                                       
+--------------------------------------------------------------------------------
+ 5538:b6cb:ac50:bafe:dcd4:19e6:9ed0:2f2d-55f1:14f:6870:73ba:d803:ba0e:b968:d45e
+(1 row)
+
+select r4 from ipranges where r4 >>= '172.16.2.0' order by r4;
+              r4               
+-------------------------------
+ 155.206.49.182-190.20.159.162
+ 172.16.2.0/28
+(2 rows)
+
 -- hashing
 select lower(a / 4), count(*) from ipaddrs group by 1 order by 2,1;
    lower   | count 

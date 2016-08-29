@@ -16,6 +16,13 @@
 #include <math.h>
 #include <string.h>
 
+#if !defined(PG_VERSION_NUM)
+#error "Unknown or unsupported postgresql version"
+#endif
+#if PG_VERSION_NUM < 80400
+#error "Unknown or unsupported postgresql version"
+#endif
+
 bool ip4_raw_input(const char *src, uint32 *dst);
 bool ip6_raw_input(const char *src, uint64 *dst);
 int ip4_raw_output(uint32 ip, char *str, int len);
@@ -24,11 +31,15 @@ int ip6_raw_output(uint64 *ip, char *str, int len);
 /* IP4 = uint32, stored in host-order. fixed-length and pass by value. */
 typedef uint32 IP4;
 
+#define IP4_INITIALIZER 0
+
 /* IP4R = range of IP4, stored in host-order. fixed-length by reference */
 typedef struct IP4R {
     IP4 lower;
     IP4 upper;
 } IP4R;
+
+#define IP4R_INITIALIZER {0,0}
 
 /*
  * IP6 = 2 x uint64, stored hi to lo, each stored in host-order.
@@ -39,11 +50,15 @@ typedef struct IP6 {
     uint64 bits[2];
 } IP6;
 
+#define IP6_INITIALIZER {{0,0}}
+
 /* IP6R = range of IP6. fixed-length by reference */
 typedef struct IP6R {
     IP6 lower;
     IP6 upper;
 } IP6R;
+
+#define IP6R_INITIALIZER {IP6_INITIALIZER,IP6_INITIALIZER}
 
 #define IP6_STRING_MAX (sizeof("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255")+2)
 #define IP6R_STRING_MAX (2*IP6_STRING_MAX)
@@ -52,9 +67,11 @@ typedef struct IP6R {
 #define IP4R_STRING_MAX (2*IP4_STRING_MAX)
 
 typedef union IP {
-	IP4 ip4;
 	IP6 ip6;
+	IP4 ip4;
 } IP;
+
+#define IP_INITIALIZER {IP6_INITIALIZER}
 
 #define ipr_af_maxbits(af_) ((af_) == PGSQL_AF_INET ? 32 : 128)
 #define ip_sizeof(af_) ((af_) == PGSQL_AF_INET ? sizeof(IP4) : sizeof(IP6))
@@ -92,9 +109,11 @@ IP_P ip_pack(int af, IP *val)
 }
 
 typedef union IPR {
-	IP4R ip4r;
 	IP6R ip6r;
+	IP4R ip4r;
 } IPR;
+
+#define IPR_INITIALIZER {IP6R_INITIALIZER}
 
 typedef void *IPR_P;  /* unaligned! */
 
@@ -130,87 +149,7 @@ typedef void *IPR_P;  /* unaligned! */
 
 /* PG version dependencies */
 
-/* now that we don't support pre-8.1, we can try and determine the pg
- * version without needing our own compile hack.
- *
- * PG_VERSION_NUM starts at 8.2; we distinguish 8.1 from 8.0 and before
- * by checking for BKI_BOOSTRAP (defined in postgres.h)
- */
-
-#if !defined(PG_VERSION_NUM)
-#ifdef BKI_BOOSTRAP
-#define PG_VERSION_NUM 80100
-#else
-#error "Unknown or unsupported postgresql version"
-#endif
-#endif
-
-/* 9.0 has no known changes from 8.4 that affect this code. */
-
-/* 8.4 adds parameters to gist consistent() to support dynamic setting
- * of the "recheck" flag, and defaults recheck to true (giving us some
- * performance loss since we don't need recheck).
- */
-
-#if PG_VERSION_NUM >= 80400
-#define GIST_HAS_RECHECK
-#define GIST_RECHECK_ARG ((bool *) PG_GETARG_POINTER(4))
-#else
-#define GIST_RECHECK_ARG (NULL)
-#endif
-
-/* 8.3 changes the varlena header (to support "short" varlenas without
- * needing a full 32-bit length field) and changes the varlena macros
- * to support this. Keep the new interface (which is cleaner than the
- * old one anyway) and emulate it for older versions.
- *
- * But for the "inet" type, unlike all other types, 8.3 does not convert
- * the packed short format back to the unpacked format in the normal
- * parameter macros. So we need additional macros to hide that change.
- * We implicitly assume here that none of the fields of 'inet_struct'
- * require any alignment stricter than byte (which is true at the moment,
- * but it's anyone's guess whether it will stay true, given how often it
- * seems to get changed).
- *
- * Also, for things like text strings, we might as well take advantage of
- * the ability to read them without forcing alignment by making a palloc'd
- * copy. This requires faking out a few macros on pre-8.3.
- */
-
 #define INET_STRUCT_DATA(is_) ((inet_struct *)VARDATA_ANY(is_))
-
-#if PG_VERSION_NUM < 80300
-
-#define VARDATA_ANY(v_) VARDATA(v_)
-#define VARSIZE_ANY_EXHDR(v_) (VARSIZE(v_) - VARHDRSZ)
-
-#define SET_VARSIZE(var_,val_) VARATT_SIZEP(var_) = (val_)
-
-#define PG_GETARG_TEXT_PP(v_) PG_GETARG_TEXT_P(v_)
-
-#endif
-
-/* PG_MODULE_MAGIC was introduced in 8.2. */
-
-#if PG_VERSION_NUM < 80200
-#define PG_MODULE_MAGIC extern int no_such_variable
-#endif
-
-/* The "inet" type representation lost its "type" field in 8.2 - it was
- * always redundant
- */
-
-#if PG_VERSION_NUM >= 80200
-
-#define INET_INIT_CIDR(i)
-#define INET_IS_CIDR(i) (1)
-
-#else /* PG_VERSION_NUM < 80200 */
-
-#define INET_INIT_CIDR(i) ((i)->type = 1)
-#define INET_IS_CIDR(i) ((i)->type)
-
-#endif
 
 #define GISTENTRYCOUNT(v) ((v)->n)
 #define GISTENTRYVEC(v) ((v)->vector)

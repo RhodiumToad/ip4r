@@ -113,14 +113,10 @@ int ip6r_to_str(IP6R *ipr, char *str, int slen)
 
 static
 text *
-make_text(char *str, int len)
+make_text(int len)
 {
-    text *ret = (text *) palloc(len + VARHDRSZ);
+    text *ret = (text *) palloc0(len + VARHDRSZ);
     SET_VARSIZE(ret, len + VARHDRSZ);
-    if (str)
-        memcpy(VARDATA(ret), str, len);
-    else
-        memset(VARDATA(ret), 0, len);
     return ret;
 }
 
@@ -128,15 +124,9 @@ static inline
 void
 set_text_len(text *txt, int len)
 {
-    if ((len + VARHDRSZ) < VARSIZE(txt))
-      SET_VARSIZE(txt, len + VARHDRSZ);
-}
-
-static inline
-int
-get_text_len(text *txt)
-{
-    return VARSIZE(txt) - VARHDRSZ;
+    Assert(len >= 0 && len + VARHDRSZ <= VARSIZE(txt));
+	if (len + VARHDRSZ <= VARSIZE(txt))
+		SET_VARSIZE(txt, len + VARHDRSZ);
 }
 
 /*
@@ -208,7 +198,7 @@ Datum
 ip6_cast_to_text(PG_FUNCTION_ARGS)
 {
     IP6 *ip = PG_GETARG_IP6_P(0);
-    text *out = make_text(NULL,IP6_STRING_MAX);
+    text *out = make_text(IP6_STRING_MAX);
     set_text_len(out, ip6_raw_output(ip->bits, VARDATA(out), IP6_STRING_MAX));
     PG_RETURN_TEXT_P(out);
 }
@@ -217,15 +207,15 @@ PG_FUNCTION_INFO_V1(ip6_cast_from_text);
 Datum
 ip6_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_P(0);
-    int tlen = get_text_len(txt);
+    text *txt = PG_GETARG_TEXT_PP(0);
+    int tlen = VARSIZE_ANY_EXHDR(txt);
     char buf[IP6_STRING_MAX];
 
     if (tlen < sizeof(buf))
     {
         IP6 *ip = palloc(sizeof(IP6));
 
-        memcpy(buf, VARDATA(txt), tlen);
+        memcpy(buf, VARDATA_ANY(txt), tlen);
         buf[tlen] = 0;
         if (ip6_raw_input(buf, ip->bits))
             PG_RETURN_IP6_P(ip);
@@ -284,7 +274,6 @@ ip6_cast_to_cidr(PG_FUNCTION_ARGS)
     SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 16);
 
     in = ((inet_struct *)VARDATA(res));
-    INET_INIT_CIDR(in);
     in->bits = 128;
     in->family = PGSQL_AF_INET6;
     {
@@ -756,7 +745,7 @@ Datum
 ip6r_cast_to_text(PG_FUNCTION_ARGS)
 {
     IP6R *ipr = PG_GETARG_IP6R_P(0);
-    text *out = make_text(NULL,IP6R_STRING_MAX);
+    text *out = make_text(IP6R_STRING_MAX);
     set_text_len(out, ip6r_to_str(ipr, VARDATA(out), IP6R_STRING_MAX));
     PG_RETURN_TEXT_P(out);
 }
@@ -765,15 +754,15 @@ PG_FUNCTION_INFO_V1(ip6r_cast_from_text);
 Datum
 ip6r_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_P(0);
-    int tlen = get_text_len(txt);
+    text *txt = PG_GETARG_TEXT_PP(0);
+    int tlen = VARSIZE_ANY_EXHDR(txt);
     char buf[IP6R_STRING_MAX];
 
     if (tlen < sizeof(buf))
     {
         IP6R ipr;
 
-        memcpy(buf, VARDATA(txt), tlen);
+        memcpy(buf, VARDATA_ANY(txt), tlen);
         buf[tlen] = 0;
         if (ip6r_from_str(buf, &ipr))
         {
@@ -796,7 +785,7 @@ ip6r_cast_from_cidr(PG_FUNCTION_ARGS)
     inet *inetptr = PG_GETARG_INET_P(0);
     inet_struct *in = INET_STRUCT_DATA(inetptr);
 
-    if (INET_IS_CIDR(in) && in->family == PGSQL_AF_INET6)
+    if (in->family == PGSQL_AF_INET6)
     {
         unsigned char *p = in->ipaddr;
         IP6 ip;
@@ -848,7 +837,6 @@ ip6r_cast_to_cidr(PG_FUNCTION_ARGS)
     SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 16);
 
     in = ((inet_struct *)VARDATA(res));
-    INET_INIT_CIDR(in);
     in->bits = bits;
     in->family = PGSQL_AF_INET6;
     {
@@ -1220,6 +1208,7 @@ Datum gip6r_penalty(PG_FUNCTION_ARGS);
 Datum gip6r_picksplit(PG_FUNCTION_ARGS);
 Datum gip6r_union(PG_FUNCTION_ARGS);
 Datum gip6r_same(PG_FUNCTION_ARGS);
+Datum gip6r_fetch(PG_FUNCTION_ARGS);
 
 static bool gip6r_leaf_consistent(IP6R * key, IP6R * query, StrategyNumber strategy);
 static bool gip6r_internal_consistent(IP6R * key, IP6R * query, StrategyNumber strategy);
@@ -1237,7 +1226,7 @@ gip6r_consistent(PG_FUNCTION_ARGS)
     GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
     IP6R *query = (IP6R *) PG_GETARG_POINTER(1);
     StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
-    bool *recheck = GIST_RECHECK_ARG;
+    bool *recheck = (bool *) PG_GETARG_POINTER(4);
     IP6R *key = (IP6R *) DatumGetPointer(entry->key);
     bool retval;
 
@@ -1308,6 +1297,13 @@ gip6r_compress(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(gip6r_decompress);
 Datum
 gip6r_decompress(PG_FUNCTION_ARGS)
+{
+    PG_RETURN_POINTER(PG_GETARG_POINTER(0));
+}
+
+PG_FUNCTION_INFO_V1(gip6r_fetch);
+Datum
+gip6r_fetch(PG_FUNCTION_ARGS)
 {
     PG_RETURN_POINTER(PG_GETARG_POINTER(0));
 }

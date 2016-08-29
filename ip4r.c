@@ -104,14 +104,10 @@ int ip4r_to_str(IP4R *ipr, char *str, int slen)
 
 static
 text *
-make_text(char *str, int len)
+make_text(int len)
 {
-    text *ret = (text *) palloc(len + VARHDRSZ);
+    text *ret = (text *) palloc0(len + VARHDRSZ);
     SET_VARSIZE(ret, len + VARHDRSZ);
-    if (str)
-        memcpy(VARDATA(ret), str, len);
-    else
-        memset(VARDATA(ret), 0, len);
     return ret;
 }
 
@@ -119,15 +115,9 @@ static inline
 void
 set_text_len(text *txt, int len)
 {
-    if ((len + VARHDRSZ) < VARSIZE(txt))
-      SET_VARSIZE(txt, len + VARHDRSZ);
-}
-
-static inline
-int
-get_text_len(text *txt)
-{
-    return VARSIZE(txt) - VARHDRSZ;
+	Assert(len + VARHDRSZ <= VARSIZE(txt));
+	if (len + VARHDRSZ <= VARSIZE(txt))
+		SET_VARSIZE(txt, len + VARHDRSZ);
 }
 
 /*
@@ -193,7 +183,7 @@ Datum
 ip4_cast_to_text(PG_FUNCTION_ARGS)
 {
     IP4 ip = PG_GETARG_IP4(0);
-    text *out = make_text(NULL,IP4_STRING_MAX);
+    text *out = make_text(IP4_STRING_MAX);
     set_text_len(out, ip4_raw_output(ip, VARDATA(out), IP4_STRING_MAX));
     PG_RETURN_TEXT_P(out);
 }
@@ -202,15 +192,15 @@ PG_FUNCTION_INFO_V1(ip4_cast_from_text);
 Datum
 ip4_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_P(0);
-    int tlen = get_text_len(txt);
+    text *txt = PG_GETARG_TEXT_PP(0);
+    int tlen = VARSIZE_ANY_EXHDR(txt);
     char buf[IP4_STRING_MAX];
 
     if (tlen < sizeof(buf))
     {
         IP4 ip;
 
-        memcpy(buf, VARDATA(txt), tlen);
+        memcpy(buf, VARDATA_ANY(txt), tlen);
         buf[tlen] = 0;
         if (ip4_raw_input(buf, &ip))
             PG_RETURN_IP4(ip);
@@ -253,7 +243,6 @@ ip4_cast_to_cidr(PG_FUNCTION_ARGS)
     SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 4);
 
     in = ((inet_struct *)VARDATA(res));
-    INET_INIT_CIDR(in);
     in->bits = 32;
     in->family = PGSQL_AF_INET;
     {
@@ -629,7 +618,7 @@ Datum
 ip4r_cast_to_text(PG_FUNCTION_ARGS)
 {
     IP4R *ipr = PG_GETARG_IP4R_P(0);
-    text *out = make_text(NULL,IP4R_STRING_MAX);
+    text *out = make_text(IP4R_STRING_MAX);
     set_text_len(out, ip4r_to_str(ipr, VARDATA(out), IP4R_STRING_MAX));
     PG_RETURN_TEXT_P(out);
 }
@@ -638,15 +627,15 @@ PG_FUNCTION_INFO_V1(ip4r_cast_from_text);
 Datum
 ip4r_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_P(0);
-    int tlen = get_text_len(txt);
+    text *txt = PG_GETARG_TEXT_PP(0);
+    int tlen = VARSIZE_ANY_EXHDR(txt);
     char buf[IP4R_STRING_MAX];
 
     if (tlen < sizeof(buf))
     {
         IP4R ipr;
 
-        memcpy(buf, VARDATA(txt), tlen);
+        memcpy(buf, VARDATA_ANY(txt), tlen);
         buf[tlen] = 0;
         if (ip4r_from_str(buf, &ipr))
         {
@@ -669,7 +658,7 @@ ip4r_cast_from_cidr(PG_FUNCTION_ARGS)
     inet *inetptr = PG_GETARG_INET_P(0);
     inet_struct *in = INET_STRUCT_DATA(inetptr);
 
-    if (INET_IS_CIDR(in) && in->family == PGSQL_AF_INET)
+    if (in->family == PGSQL_AF_INET)
     {
         unsigned char *p = in->ipaddr;
         IP4 ip = (p[0] << 24)|(p[1] << 16)|(p[2] << 8)|p[3];
@@ -705,7 +694,6 @@ ip4r_cast_to_cidr(PG_FUNCTION_ARGS)
     SET_VARSIZE(res, VARHDRSZ + offsetof(inet_struct, ipaddr) + 4);
 
     in = ((inet_struct *)VARDATA(res));
-    INET_INIT_CIDR(in);
     in->bits = bits;
     in->family = PGSQL_AF_INET;
     {
@@ -1077,6 +1065,7 @@ Datum gip4r_penalty(PG_FUNCTION_ARGS);
 Datum gip4r_picksplit(PG_FUNCTION_ARGS);
 Datum gip4r_union(PG_FUNCTION_ARGS);
 Datum gip4r_same(PG_FUNCTION_ARGS);
+Datum gip4r_fetch(PG_FUNCTION_ARGS);
 
 static bool gip4r_leaf_consistent(IP4R * key, IP4R * query, StrategyNumber strategy);
 static bool gip4r_internal_consistent(IP4R * key, IP4R * query, StrategyNumber strategy);
@@ -1094,7 +1083,7 @@ gip4r_consistent(PG_FUNCTION_ARGS)
     GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
     IP4R *query = (IP4R *) PG_GETARG_POINTER(1);
     StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
-    bool *recheck = GIST_RECHECK_ARG;
+    bool *recheck = (bool *) PG_GETARG_POINTER(4);
     IP4R *key = (IP4R *) DatumGetPointer(entry->key);
     bool retval;
 
@@ -1165,6 +1154,13 @@ gip4r_compress(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(gip4r_decompress);
 Datum
 gip4r_decompress(PG_FUNCTION_ARGS)
+{
+    PG_RETURN_POINTER(PG_GETARG_POINTER(0));
+}
+
+PG_FUNCTION_INFO_V1(gip4r_fetch);
+Datum
+gip4r_fetch(PG_FUNCTION_ARGS)
 {
     PG_RETURN_POINTER(PG_GETARG_POINTER(0));
 }

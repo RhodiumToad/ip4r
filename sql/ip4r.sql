@@ -2010,6 +2010,14 @@ select * from ipaddrs a join ipranges r on (r.r >>= a.a) order by a,r;
 select * from ipaddrs a join ipranges r on (r.r4 >>= a.a4) order by a4,r4;
 select * from ipaddrs a join ipranges r on (r.r6 >>= a.a6) order by a6,r6;
 
+-- index-only, on versions that support it:
+
+vacuum ipranges;
+
+select r from ipranges where r >>= '5555::' order by r;
+select r6 from ipranges where r6 >>= '5555::' order by r6;
+select r4 from ipranges where r4 >>= '172.16.2.0' order by r4;
+
 -- hashing
 
 select lower(a / 4), count(*) from ipaddrs group by 1 order by 2,1;

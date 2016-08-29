@@ -3,7 +3,11 @@ MODULE_big = ip4r
 
 ifndef NO_EXTENSION
 EXTENSION = ip4r
-DATA = ip4r--2.0.sql ip4r--unpackaged2.0--2.0.sql ip4r--unpackaged1--2.0.sql
+DATA = ip4r--2.1.sql \
+       ip4r--2.0--2.1.sql \
+       ip4r--unpackaged2.1--2.1.sql \
+       ip4r--unpackaged2.0--2.0.sql \
+       ip4r--unpackaged1--2.0.sql
 REGRESS = ip4r
 else
 DATA_built = ip4r.sql
@@ -25,10 +29,23 @@ include $(top_builddir)/src/Makefile.global
 include $(top_srcdir)/contrib/contrib-global.mk
 endif
 
+ifeq ($(filter-out 7.% 8.0 8.1 8.2 8.3, $(MAJORVERSION)),)
+$(error unsupported PostgreSQL version)
+endif
+
 ifndef EXTENSION
 
-ip4r.sql.in: ip4r--2.0.sql legacy.sed
+ifeq ($(filter-out 8.4, $(MAJORVERSION)),)
+
+ip4r.sql.in: ip4r--2.1.sql legacy.sed
+	sed -f legacy.sed $< | sed -e '/^DO /,/^[$$]/d' >$@
+
+else
+
+ip4r.sql.in: ip4r--2.1.sql legacy.sed
 	sed -f legacy.sed $< >$@
+
+endif
 
 sql/ip4r-legacy.sql: sql/ip4r.sql legacy-r.sed
 	sed -f legacy-r.sed $< >$@
@@ -39,7 +56,7 @@ expected/ip4r-legacy.out: expected/ip4r.out
 installcheck: sql/ip4r-legacy.sql expected/ip4r-legacy.out
 
 else
-ifeq ($(filter-out 7.% 8.% 9.0, $(MAJORVERSION)),)
+ifeq ($(filter-out 8.% 9.0, $(MAJORVERSION)),)
 $(error extension build not supported in versions before 9.1, use NO_EXTENSION=1)
 endif
 endif

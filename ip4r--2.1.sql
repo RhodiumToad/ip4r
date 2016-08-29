@@ -223,7 +223,8 @@ CREATE CAST (inet as ipaddress) WITH FUNCTION ipaddress(inet) AS ASSIGNMENT;
 -- ----------------------------------------------------------------------
 -- Cast definitions (cross-type)
 
--- the lossless "upward" casts are made implict.
+-- the lossless "upward" casts are made implict. Downward casts are now
+-- assignment casts.
 
 CREATE CAST (ip4 as ip4r) WITH FUNCTION ip4r(ip4) AS IMPLICIT;
 CREATE CAST (ip4 as ipaddress) WITH FUNCTION ipaddress(ip4) AS IMPLICIT;
@@ -237,11 +238,11 @@ CREATE CAST (ip6r as iprange) WITH FUNCTION iprange(ip6r) AS IMPLICIT;
 
 CREATE CAST (ipaddress as iprange) WITH FUNCTION iprange(ipaddress) AS IMPLICIT;
 
-CREATE CAST (ipaddress as ip4) WITH FUNCTION ip4(ipaddress);
-CREATE CAST (ipaddress as ip6) WITH FUNCTION ip6(ipaddress);
+CREATE CAST (ipaddress as ip4) WITH FUNCTION ip4(ipaddress) AS ASSIGNMENT;
+CREATE CAST (ipaddress as ip6) WITH FUNCTION ip6(ipaddress) AS ASSIGNMENT;
 
-CREATE CAST (iprange as ip4r) WITH FUNCTION ip4r(iprange);
-CREATE CAST (iprange as ip6r) WITH FUNCTION ip6r(iprange);
+CREATE CAST (iprange as ip4r) WITH FUNCTION ip4r(iprange) AS ASSIGNMENT;
+CREATE CAST (iprange as ip6r) WITH FUNCTION ip6r(iprange) AS ASSIGNMENT;
 
 -- ----------------------------------------------------------------------
 -- Constructor functions
@@ -685,35 +686,32 @@ CREATE OPERATOR CLASS hash_iprange_ops DEFAULT FOR TYPE iprange USING hash AS
 -- ----------------------------------------------------------------------
 -- GiST
 
--- these type declarations are actually wrong for 8.4+ (which added
--- more args to consistent) but we ignore that because the access
--- method code doesn't actually look at the function declaration, and
--- the differences are handled in the C code. Having the SQL
--- definition changing is just too much of a pain. 
-
-CREATE FUNCTION gip4r_consistent(internal,ip4r,int4) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip4r_consistent(internal,ip4r,int2,oid,internal) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_compress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_decompress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_penalty(internal,internal,internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
 CREATE FUNCTION gip4r_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_union(internal, internal) RETURNS ip4r AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_same(ip4r, ip4r, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip4r_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 
-CREATE FUNCTION gip6r_consistent(internal,ip6r,int4) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip6r_consistent(internal,ip6r,int2,oid,internal) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_compress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_decompress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_penalty(internal,internal,internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
 CREATE FUNCTION gip6r_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_union(internal, internal) RETURNS ip6r AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_same(ip6r, ip6r, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip6r_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 
-CREATE FUNCTION gipr_consistent(internal,iprange,int4) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gipr_consistent(internal,iprange,int2,oid,internal) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_compress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_decompress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_penalty(internal,internal,internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
 CREATE FUNCTION gipr_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_union(internal, internal) RETURNS iprange AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_same(iprange, iprange, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gipr_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 
 CREATE OPERATOR CLASS gist_ip4r_ops DEFAULT FOR TYPE ip4r USING gist AS
        OPERATOR	1	>>= ,
@@ -722,7 +720,7 @@ CREATE OPERATOR CLASS gist_ip4r_ops DEFAULT FOR TYPE ip4r USING gist AS
        OPERATOR	4	<< ,
        OPERATOR	5	&& ,
        OPERATOR	6	= ,
-       FUNCTION	1	gip4r_consistent (internal, ip4r, int4),
+       FUNCTION	1	gip4r_consistent (internal, ip4r, int2, oid, internal),
        FUNCTION	2	gip4r_union (internal, internal),
        FUNCTION	3	gip4r_compress (internal),
        FUNCTION	4	gip4r_decompress (internal),
@@ -737,7 +735,7 @@ CREATE OPERATOR CLASS gist_ip6r_ops DEFAULT FOR TYPE ip6r USING gist AS
        OPERATOR	4	<< ,
        OPERATOR	5	&& ,
        OPERATOR	6	= ,
-       FUNCTION	1	gip6r_consistent (internal, ip6r, int4),
+       FUNCTION	1	gip6r_consistent (internal, ip6r, int2, oid, internal),
        FUNCTION	2	gip6r_union (internal, internal),
        FUNCTION	3	gip6r_compress (internal),
        FUNCTION	4	gip6r_decompress (internal),
@@ -752,12 +750,42 @@ CREATE OPERATOR CLASS gist_iprange_ops DEFAULT FOR TYPE iprange USING gist AS
        OPERATOR	4	<< ,
        OPERATOR	5	&& ,
        OPERATOR	6	= ,
-       FUNCTION	1	gipr_consistent (internal, iprange, int4),
+       FUNCTION	1	gipr_consistent (internal, iprange, int2, oid, internal),
        FUNCTION	2	gipr_union (internal, internal),
        FUNCTION	3	gipr_compress (internal),
        FUNCTION	4	gipr_decompress (internal),
        FUNCTION	5	gipr_penalty (internal, internal, internal),
        FUNCTION	6	gipr_picksplit (internal, internal),
        FUNCTION	7	gipr_same (iprange, iprange, internal);
+
+DO $s$
+  BEGIN
+    IF current_setting('server_version_num')::integer >= 90500 THEN
+      ALTER OPERATOR FAMILY gist_ip4r_ops USING gist ADD
+             FUNCTION	9  (ip4r,ip4r)	gip4r_fetch (internal);
+      ALTER OPERATOR FAMILY gist_ip6r_ops USING gist ADD
+             FUNCTION	9  (ip6r,ip6r)	gip6r_fetch (internal);
+      ALTER OPERATOR FAMILY gist_iprange_ops USING gist ADD
+             FUNCTION	9  (iprange,iprange)	gipr_fetch (internal);
+    END IF;
+    IF current_setting('server_version_num')::integer >= 90600 THEN
+      DECLARE
+        r record;
+      BEGIN
+        FOR r IN SELECT oid::regprocedure as fsig
+                   FROM pg_catalog.pg_proc
+                  WHERE (probin = 'MODULE_PATHNAME'
+                         AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
+                     OR (oid in ('family(ip4)'::regprocedure,
+                                 'family(ip6)'::regprocedure,
+                                 'family(ip4r)'::regprocedure,
+                                 'family(ip6r)'::regprocedure))
+        LOOP
+          EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
+        END LOOP;
+      END;
+    END IF;
+  END;
+$s$;
 
 -- end 

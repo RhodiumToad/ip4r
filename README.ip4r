@@ -2,8 +2,28 @@
 IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 ===========================================================
 
-CHANGES from version 1.x:
-=========================
+CHANGES in version 2.1:
+=======================
+
+ * Index-only scans are now supported (on pg 9.5 or later)
+
+ * Downward casts from ipaddress to ip4/ip6, and iprange to
+   ip4r/ip6r, are now allowed as assignment casts as well as
+   explicit casts.
+
+ * parallel-safe is set on all functions in pg 9.6 or later.
+
+ * Support for pre-9.1 versions of postgres (back to 8.4), and
+   non-extension builds on any version, is maintained in this release
+   (and some glaring bugs fixed), but should be considered
+   deprecated. Future releases will likely abandon support for
+   non-extension packaging.
+
+ * Vestigial (and apparently non-functional) support for versions
+   prior to 8.4 is removed.
+
+CHANGES in version 2.0:
+=======================
 
  * 9.1+ extension packaging mechanism is the default for this version
    (use NO_EXTENSION=1 to build on pre-9.1 or without packaging)
@@ -23,10 +43,6 @@ If upgrading from ip4r-1.x, use:
 
 CREATE EXTENSION ip4r FROM unpackaged1;
 
-PRE-9.1 SYSTEMS
-===============
-
-On versions before 9.1, or to build without extension packaging, use the
 
 RATIONALE
 =========
@@ -35,12 +51,16 @@ While PostgreSQL already has builtin types 'inet' and 'cidr', the
 authors of this module found that they had a number of requirements
 that were not addressed by the builtin type.
 
-Firstly and most importantly, the builtin types have no support for
-index lookups of the form (column >>= parameter), i.e. where you have
-a table of IP address ranges and wish to find which ones include a
-given IP address.  This requires an rtree or gist index to do
+Firstly and most importantly, the builtin types have no good support
+for index lookups of the form (column >>= parameter), i.e. where you
+have a table of IP address ranges and wish to find which ones include
+a given IP address.  This requires an rtree or gist index to do
 efficiently, and also requires a way to represent IP address ranges
 that do not fall precisely on CIDR boundaries.
+
+(While newer versions of PostgreSQL do now have support for gist
+indexes on the inet type, the performance is very poor compared to
+this module.)
 
 Secondly, the builtin inet/cidr are somewhat overloaded with
 semantics, with inet combining two distinct concepts (a netblock, and
@@ -102,6 +122,17 @@ make install
 (as with PostgreSQL itself, this requires GNU Make. The second command
 will usually need to be run as root.)
 
+PRE-9.1 SYSTEMS
+===============
+
+On versions before 9.1, or to build without extension packaging, use:
+
+make NO_EXTENSION=1
+make NO_EXTENSION=1 install
+
+and execute the ip4r.sql file manually in the same way as for contrib
+modules (see the postgres manual).
+
 
 USAGE
 =====
@@ -130,7 +161,7 @@ than all v6 addresses, and '1.2.3.4' and '::ffff:1.2.3.4' are not equal.
 The following type conversions are supported:
 
   Source type   | Dest type  |  Form
-----------------|------------|------------------------------------------------
+----------------|------------|-------------------------------------------------
   ipX           |  text      |  text(ipX)  or  ipX::text  (explicit)
   text          |  ipX       |  ipX(text)  or  text::ipX  (explicit)
   ipX           |  cidr      |  cidr(ipX)  or  ipX::cidr  (assignment)
@@ -144,8 +175,8 @@ The following type conversions are supported:
   ipX           |  ipXr      |  ipXr(ipX)  or  ipX::ipXr  (implicit)
   ip4           |  ipaddress |  ipaddress(ip4)  or  ip4::ipaddress (implicit)
   ip6           |  ipaddress |  ipaddress(ip6)  or  ip6::ipaddress (implicit)
-  ipaddress     |  ip4       |  ip4(ipaddress)  or  ipaddress::ip4 (explicit)
-  ipaddress     |  ip6       |  ip6(ipaddress)  or  ipaddress::ip6 (explicit)
+  ipaddress     |  ip4       |  ip4(ipaddress)  or  ipaddress::ip4 (assignment)
+  ipaddress     |  ip6       |  ip6(ipaddress)  or  ipaddress::ip6 (assignment)
 
 The conversions from bigint and float8 are available only for ip4, and
 accept values which are exact integers in the range 0 .. 2^32-1, which
@@ -407,12 +438,12 @@ SELECT DISTINCT ON (ips.ip) ips.ip, ranges.range
 AUTHORS
 =======
 
-this code by andrew@tao11.riddles.org.uk Oct 2004 - Nov 2011
+this code by andrew@tao11.riddles.org.uk Oct 2004 - Aug 2016
 derived from 'ipr' by Steve Atkins <steve@blighty.com> August 2003
 derived from the 'seg' type distributed with PostgreSQL.
 
 Distributed under the same terms as PostgreSQL itself.
 
 Currently maintained at:
-  http://pgfoundry.org/projects/ip4r/
+  http://github.com/RhodiumToad/ip4r
 
