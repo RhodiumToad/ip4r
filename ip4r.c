@@ -314,7 +314,15 @@ ip4_cast_from_double(PG_FUNCTION_ARGS)
                 (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
                  errmsg("ip address out of range")));
 
-    PG_RETURN_IP4((unsigned long) ival);
+	/*
+	 * casting directly to ulong evokes the nasal demons for negative values,
+	 * casting to long first evokes them for large positive values if long is
+	 * 32bit.
+	 */
+	if (ival < 0)
+		PG_RETURN_IP4((unsigned long) (long) ival);
+	else
+		PG_RETURN_IP4((unsigned long) ival);
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_from_numeric);
