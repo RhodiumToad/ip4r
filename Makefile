@@ -3,7 +3,8 @@ MODULE_big = ip4r
 
 ifndef NO_EXTENSION
 EXTENSION = ip4r
-DATA = ip4r--2.1.sql \
+DATA = ip4r--2.2.sql \
+       ip4r--2.1--2.2.sql \
        ip4r--2.0--2.1.sql \
        ip4r--unpackaged2.1--2.1.sql \
        ip4r--unpackaged2.0--2.0.sql \
@@ -37,12 +38,12 @@ ifndef EXTENSION
 
 ifeq ($(filter-out 8.4, $(MAJORVERSION)),)
 
-ip4r.sql.in: ip4r--2.1.sql legacy.sed
+ip4r.sql.in: ip4r--2.2.sql legacy.sed
 	sed -f legacy.sed $< | sed -e '/^DO /,/^[$$]/d' >$@
 
 else
 
-ip4r.sql.in: ip4r--2.1.sql legacy.sed
+ip4r.sql.in: ip4r--2.2.sql legacy.sed
 	sed -f legacy.sed $< >$@
 
 endif

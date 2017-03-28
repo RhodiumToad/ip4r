@@ -2,6 +2,15 @@
 IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 ===========================================================
 
+CHANGES in version 2.2:
+=======================
+
+ * Updating to this version should fix the pg_dump issue that affects
+   certain older installs that have been updated to 2.1, where a
+   poorly written catalog update to fix old function signatures broke
+   pg_dump.
+
+
 CHANGES in version 2.1:
 =======================
 
