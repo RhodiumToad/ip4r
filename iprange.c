@@ -313,7 +313,7 @@ iprange_send(PG_FUNCTION_ARGS)
 
     pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
-	pq_sendbyte(&buf, ipr_af_maxbits(af));
+	pq_sendbyte(&buf, (int8) ipr_af_maxbits(af));
 	pq_sendbyte(&buf, 1);
 
 	switch (af)

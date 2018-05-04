@@ -1,26 +1,38 @@
 /* $Id: ipr.h,v 1.2 2011/08/22 14:05:19 andrewsn Exp $ */
 
-#include <stdio.h>
 #include "postgres.h"
 
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+
 #include "access/gist.h"
-#include "access/skey.h"
 #include "access/hash.h"
+#include "access/skey.h"
 #include "libpq/pqformat.h"
-#include "utils/elog.h"
-#include "utils/palloc.h"
 #include "utils/builtins.h"
+#include "utils/elog.h"
 #include "utils/inet.h"
 #include "utils/numeric.h"
-#include <sys/socket.h>
-#include <math.h>
-#include <string.h>
+#include "utils/palloc.h"
 
 #if !defined(PG_VERSION_NUM)
 #error "Unknown or unsupported postgresql version"
 #endif
 #if PG_VERSION_NUM < 80400
 #error "Unknown or unsupported postgresql version"
+#endif
+
+/*
+ * pg11 removed these; consider removing them later, but for now easier to keep
+ * them
+ */
+#ifndef TRUE
+#define TRUE true
+#endif
+#ifndef FALSE
+#define FALSE false
 #endif
 
 bool ip4_raw_input(const char *src, uint32 *dst);
