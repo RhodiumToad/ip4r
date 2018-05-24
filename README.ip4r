@@ -2,6 +2,14 @@
 IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 ===========================================================
 
+CHANGES in version 2.3:
+=======================
+
+ * Fix build for changes in PostgreSQL 11.
+
+ * Fix long-standing bug in binary-mode I/O of iprange type
+   (other types were not affected).
+
 CHANGES in version 2.2:
 =======================
 
@@ -9,7 +17,6 @@ CHANGES in version 2.2:
    certain older installs that have been updated to 2.1, where a
    poorly written catalog update to fix old function signatures broke
    pg_dump.
-
 
 CHANGES in version 2.1:
 =======================
