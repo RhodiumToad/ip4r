@@ -274,7 +274,7 @@ iprange_recv(PG_FUNCTION_ARGS)
 				ipr.ip6r.upper.bits[1] = ipr.ip6r.lower.bits[1] | hostmask6_lo(bits);
 				PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6,&ipr));
 			}
-			else if (nbytes == sizeof(IP4R))
+			else if (nbytes == sizeof(IP6R))
 			{
 				ipr.ip6r.lower.bits[0] = (uint64) pq_getmsgint64(buf);
 				ipr.ip6r.lower.bits[1] = (uint64) pq_getmsgint64(buf);
@@ -313,7 +313,7 @@ iprange_send(PG_FUNCTION_ARGS)
 
     pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
-	pq_sendbyte(&buf, (int8) ipr_af_maxbits(af));
+	pq_sendbyte(&buf, (int8) bits);
 	pq_sendbyte(&buf, 1);
 
 	switch (af)
@@ -335,7 +335,6 @@ iprange_send(PG_FUNCTION_ARGS)
 				pq_sendint(&buf, ipr.ip4r.upper, sizeof(IP4));
 			}
 			break;
-
 
 		case PGSQL_AF_INET6:
 			if (bits <= 64)

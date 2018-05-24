@@ -3086,6 +3086,115 @@ select '-1.2.3.4'::iprange;
 ERROR:  invalid IP4R value: "-1.2.3.4" at character 8
 select '1.2.3.4-'::iprange;
 ERROR:  invalid IP4R value: "1.2.3.4-" at character 8
+-- canaries for portability issues in binary output
+select r, encode(ip4_send(r),'hex') from (select '128.1.255.0'::ip4 as r) s;
+      r      |  encode  
+-------------+----------
+ 128.1.255.0 | 8001ff00
+(1 row)
+
+select r, encode(ip4_send(r),'hex') from (select '1.128.0.255'::ip4 as r) s;
+      r      |  encode  
+-------------+----------
+ 1.128.0.255 | 018000ff
+(1 row)
+
+select r, encode(ip4r_send(r),'hex') from (select '128.1.255.0/24'::ip4r as r) s;
+       r        |      encode      
+----------------+------------------
+ 128.1.255.0/24 | 8001ff008001ffff
+(1 row)
+
+select r, encode(ip4r_send(r),'hex') from (select '128.1.255.1-128.1.255.2'::ip4r as r) s;
+            r            |      encode      
+-------------------------+------------------
+ 128.1.255.1-128.1.255.2 | 8001ff018001ff02
+(1 row)
+
+select r, encode(ip6_send(r),'hex') from (select 'ffff::8000'::ip6 as r) s;
+     r      |              encode              
+------------+----------------------------------
+ ffff::8000 | ffff0000000000000000000000008000
+(1 row)
+
+select r, encode(ip6_send(r),'hex') from (select '8000::ffff'::ip6 as r) s;
+     r      |              encode              
+------------+----------------------------------
+ 8000::ffff | 8000000000000000000000000000ffff
+(1 row)
+
+select r, encode(ip6r_send(r),'hex') from (select 'ffff::8000/128'::ip6r as r) s;
+     r      |                              encode                              
+------------+------------------------------------------------------------------
+ ffff::8000 | ffff0000000000000000000000008000ffff0000000000000000000000008000
+(1 row)
+
+select r, encode(ip6r_send(r),'hex') from (select '8000::ffff/128'::ip6r as r) s;
+     r      |                              encode                              
+------------+------------------------------------------------------------------
+ 8000::ffff | 8000000000000000000000000000ffff8000000000000000000000000000ffff
+(1 row)
+
+select r, encode(ipaddress_send(r),'hex') from (select '128.1.255.0'::ipaddress as r) s;
+      r      |      encode      
+-------------+------------------
+ 128.1.255.0 | 022001048001ff00
+(1 row)
+
+select r, encode(ipaddress_send(r),'hex') from (select '1.128.0.255'::ipaddress as r) s;
+      r      |      encode      
+-------------+------------------
+ 1.128.0.255 | 02200104018000ff
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select '128.1.255.0/24'::iprange as r) s;
+       r        |      encode      
+----------------+------------------
+ 128.1.255.0/24 | 021801048001ff00
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select '128.1.255.1-128.1.255.2'::iprange as r) s;
+            r            |          encode          
+-------------------------+--------------------------
+ 128.1.255.1-128.1.255.2 | 02ff01088001ff018001ff02
+(1 row)
+
+select r, encode(ipaddress_send(r),'hex') from (select 'ffff::8000'::ipaddress as r) s;
+     r      |                  encode                  
+------------+------------------------------------------
+ ffff::8000 | 03800110ffff0000000000000000000000008000
+(1 row)
+
+select r, encode(ipaddress_send(r),'hex') from (select '8000::ffff'::ipaddress as r) s;
+     r      |                  encode                  
+------------+------------------------------------------
+ 8000::ffff | 038001108000000000000000000000000000ffff
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8000/128'::iprange as r) s;
+     r      |                  encode                  
+------------+------------------------------------------
+ ffff::8000 | 03800110ffff0000000000000000000000008000
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8000/120'::iprange as r) s;
+       r        |                  encode                  
+----------------+------------------------------------------
+ ffff::8000/120 | 03780110ffff0000000000000000000000008000
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8001-ffff::8002'::iprange as r) s;
+           r           |                                  encode                                  
+-----------------------+--------------------------------------------------------------------------
+ ffff::8001-ffff::8002 | 03ff0120ffff0000000000000000000000008001ffff0000000000000000000000008002
+(1 row)
+
+select r, encode(iprange_send(r),'hex') from (select '-'::iprange as r) s;
+ r |  encode  
+---+----------
+ - | 00ff0100
+(1 row)
+
 -- text casts and cross-type casts
 select r::text  from (select '-'::iprange as r) s;
  r 

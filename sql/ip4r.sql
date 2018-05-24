@@ -821,6 +821,31 @@ select '-::'::iprange;
 select '-1.2.3.4'::iprange;
 select '1.2.3.4-'::iprange;
 
+-- canaries for portability issues in binary output
+
+select r, encode(ip4_send(r),'hex') from (select '128.1.255.0'::ip4 as r) s;
+select r, encode(ip4_send(r),'hex') from (select '1.128.0.255'::ip4 as r) s;
+select r, encode(ip4r_send(r),'hex') from (select '128.1.255.0/24'::ip4r as r) s;
+select r, encode(ip4r_send(r),'hex') from (select '128.1.255.1-128.1.255.2'::ip4r as r) s;
+
+select r, encode(ip6_send(r),'hex') from (select 'ffff::8000'::ip6 as r) s;
+select r, encode(ip6_send(r),'hex') from (select '8000::ffff'::ip6 as r) s;
+select r, encode(ip6r_send(r),'hex') from (select 'ffff::8000/128'::ip6r as r) s;
+select r, encode(ip6r_send(r),'hex') from (select '8000::ffff/128'::ip6r as r) s;
+
+select r, encode(ipaddress_send(r),'hex') from (select '128.1.255.0'::ipaddress as r) s;
+select r, encode(ipaddress_send(r),'hex') from (select '1.128.0.255'::ipaddress as r) s;
+select r, encode(iprange_send(r),'hex') from (select '128.1.255.0/24'::iprange as r) s;
+select r, encode(iprange_send(r),'hex') from (select '128.1.255.1-128.1.255.2'::iprange as r) s;
+
+select r, encode(ipaddress_send(r),'hex') from (select 'ffff::8000'::ipaddress as r) s;
+select r, encode(ipaddress_send(r),'hex') from (select '8000::ffff'::ipaddress as r) s;
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8000/128'::iprange as r) s;
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8000/120'::iprange as r) s;
+select r, encode(iprange_send(r),'hex') from (select 'ffff::8001-ffff::8002'::iprange as r) s;
+
+select r, encode(iprange_send(r),'hex') from (select '-'::iprange as r) s;
+
 -- text casts and cross-type casts
 
 select r::text  from (select '-'::iprange as r) s;
