@@ -1,4 +1,4 @@
-/* $Id: iprange.c,v 1.4 2011/11/02 07:47:24 andrewsn Exp $ */
+/* iprange.c */
 
 #include "ipr.h"
 

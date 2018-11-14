@@ -1,4 +1,4 @@
-/* $Id: ip6r.c,v 1.2 2011/08/22 14:05:19 andrewsn Exp $ */
+/* ip6r.c */
 
 #include "ipr.h"
 

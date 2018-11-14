@@ -1,4 +1,4 @@
-/* $Id: ipaddr.c,v 1.1 2011/08/03 20:16:03 andrewsn Exp $ */
+/* ipaddr.c */
 
 #include "ipr.h"
 
@@ -38,7 +38,7 @@ ipaddr_transform_1d(Datum d, PGFunction ip4func, PGFunction ip6func)
 		case PGSQL_AF_INET6:
 			return DirectFunctionCall1(ip6func, IP6PGetDatum(&ip.ip6));
 	}
-	
+
 	ipaddr_internal_error();
 }
 
@@ -116,7 +116,7 @@ ipaddr_transform_2(Datum d1, Datum d2, PGFunction ip4func, PGFunction ip6func)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid mixing of IP address families")));
-				
+
 	switch (af1)
 	{
 		case PGSQL_AF_INET:
@@ -174,7 +174,7 @@ ipaddr_in(PG_FUNCTION_ARGS)
 {
     char *str = PG_GETARG_CSTRING(0);
 	IP ip;
-		
+
 	if (strchr(str,':'))
 	{
 		if (ip6_raw_input(str, ip.ip6.bits))
@@ -539,7 +539,7 @@ ipaddr_minus_ipaddr(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid mixing of IP address families")));
-				
+
 	switch (af1)
 	{
 		case PGSQL_AF_INET:
@@ -744,3 +744,4 @@ ipaddr_cmp(PG_FUNCTION_ARGS)
     PG_RETURN_INT32(retval);
 }
 
+/* end */

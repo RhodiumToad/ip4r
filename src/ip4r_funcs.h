@@ -1,5 +1,4 @@
-/* $Id: ip4r_funcs.h,v 1.1 2011/08/03 20:16:03 andrewsn Exp $ */
-
+/* ip4r_funcs.h */
 
 static inline
 uint32 hostmask(unsigned masklen)
@@ -216,6 +215,5 @@ bool ip4r_extends_right_of_internal(IP4R *left, IP4R *right)
 {
     return (left->upper > right->upper);
 }
-
 
 /* end */

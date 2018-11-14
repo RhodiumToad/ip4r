@@ -1,4 +1,4 @@
-/* $Id: ip6r_funcs.h,v 1.1 2011/08/03 20:16:03 andrewsn Exp $ */
+/* ip6r_funcs.h */
 
 /**************************************************************************/
 /* This part is the internal implementation of all functionality, with no

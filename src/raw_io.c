@@ -1,4 +1,4 @@
-/* $Id: raw_io.c,v 1.2 2011/08/22 14:05:19 andrewsn Exp $ */
+/* raw_io.c */
 
 /*
  * Copyright (c) 2011 Andrew Gierth
@@ -269,3 +269,4 @@ int ip6_raw_output(uint64 *ip, char *str, int len)
 	return snprintf(str, len, "%s", buf);
 }
 
+/* end */

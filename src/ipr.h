@@ -1,4 +1,4 @@
-/* $Id: ipr.h,v 1.2 2011/08/22 14:05:19 andrewsn Exp $ */
+/* ipr.h */
 
 #include "postgres.h"
 
@@ -389,3 +389,5 @@ Datum iprange_size(PG_FUNCTION_ARGS);
 Datum iprange_size_exact(PG_FUNCTION_ARGS);
 Datum iprange_prefixlen(PG_FUNCTION_ARGS);
 Datum iprange_cmp(PG_FUNCTION_ARGS);
+
+/* end */
