@@ -24,17 +24,6 @@
 #error "Unknown or unsupported postgresql version"
 #endif
 
-/*
- * pg11 removed these; consider removing them later, but for now easier to keep
- * them
- */
-#ifndef TRUE
-#define TRUE true
-#endif
-#ifndef FALSE
-#define FALSE false
-#endif
-
 bool ip4_raw_input(const char *src, uint32 *dst);
 bool ip6_raw_input(const char *src, uint64 *dst);
 int ip4_raw_output(uint32 ip, char *str, int len);
@@ -114,7 +103,7 @@ IP_P ip_pack(int af, IP *val)
 {
 	int sz = ip_sizeof(af);
     IP_P out = palloc(VARHDRSZ + sz);
-    
+
 	SET_VARSIZE(out, VARHDRSZ + sz);
 	memcpy(VARDATA(out), val, sz);
 	return out;
@@ -400,4 +389,3 @@ Datum iprange_size(PG_FUNCTION_ARGS);
 Datum iprange_size_exact(PG_FUNCTION_ARGS);
 Datum iprange_prefixlen(PG_FUNCTION_ARGS);
 Datum iprange_cmp(PG_FUNCTION_ARGS);
-

@@ -19,10 +19,10 @@ bool ip6r_from_str(char *str, IP6R *ipr)
         case 0:     /* no separator, must be single ip6 addr */
         {
             if (!ip6_raw_input(str, ip.bits))
-                return FALSE;
+                return false;
             ipr->lower = ip;
             ipr->upper = ip;
-            return TRUE;
+            return true;
         }
 
         case '-':   /* lower-upper */
@@ -30,14 +30,14 @@ bool ip6r_from_str(char *str, IP6R *ipr)
             char *rest = str + pos + 1;
 
             if (pos > sizeof(buf)-2)
-                return FALSE;
+                return false;
             memcpy(buf, str, pos);
             buf[pos] = 0;
             if (!ip6_raw_input(buf, ip.bits))
-                return FALSE;
+                return false;
             ipr->lower = ip;
             if (!ip6_raw_input(rest, ip.bits))
-                return FALSE;
+                return false;
             if (!ip6_lessthan(&ip, &ipr->lower))
                 ipr->upper = ip;
             else
@@ -45,7 +45,7 @@ bool ip6r_from_str(char *str, IP6R *ipr)
                 ipr->upper = ipr->lower;
                 ipr->lower = ip;
             }
-            return TRUE;
+            return true;
         }
 
         case '/':  /* prefix/len */
@@ -55,20 +55,20 @@ bool ip6r_from_str(char *str, IP6R *ipr)
             char dummy;
 
             if (pos > sizeof(buf)-2)
-                return FALSE;
+                return false;
             memcpy(buf, str, pos);
             buf[pos] = 0;
             if (!ip6_raw_input(buf, ip.bits))
-                return FALSE;
+                return false;
             if (rest[strspn(rest,"0123456789")])
-                return FALSE;
+                return false;
             if (sscanf(rest, "%u%c", &pfxlen, &dummy) != 1)
-                return FALSE;
+                return false;
             return ip6r_from_cidr(&ip, pfxlen, ipr);
         }
 
         default:
-            return FALSE;      /* can't happen */
+            return false;      /* can't happen */
     }
 }
 
@@ -931,7 +931,7 @@ ip6r_net_mask(PG_FUNCTION_ARGS)
 
     {
         IP6R *res = palloc(sizeof(IP6R));
-    
+
         res->lower.bits[0] = ip->bits[0] & mask->bits[0];
         res->lower.bits[1] = ip->bits[1] & mask->bits[1];
         res->upper.bits[0] = ip->bits[0] | ~(mask->bits[0]);
@@ -1058,7 +1058,7 @@ PG_FUNCTION_INFO_V1(ip6r_overlaps);
 Datum
 ip6r_overlaps(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( ip6r_overlaps_internal(PG_GETARG_IP6R_P(0), 
+    PG_RETURN_BOOL( ip6r_overlaps_internal(PG_GETARG_IP6R_P(0),
                                            PG_GETARG_IP6R_P(1)) );
 }
 
@@ -1068,7 +1068,7 @@ ip6r_contains(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip6r_contains_internal(PG_GETARG_IP6R_P(0),
                                            PG_GETARG_IP6R_P(1),
-                                           TRUE) );
+                                           true) );
 }
 
 PG_FUNCTION_INFO_V1(ip6r_contains_strict);
@@ -1077,7 +1077,7 @@ ip6r_contains_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip6r_contains_internal(PG_GETARG_IP6R_P(0),
                                            PG_GETARG_IP6R_P(1),
-                                           FALSE) );
+                                           false) );
 }
 
 PG_FUNCTION_INFO_V1(ip6r_contained_by);
@@ -1086,7 +1086,7 @@ ip6r_contained_by(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip6r_contains_internal(PG_GETARG_IP6R_P(1),
                                            PG_GETARG_IP6R_P(0),
-                                           TRUE) );
+                                           true) );
 }
 
 PG_FUNCTION_INFO_V1(ip6r_contained_by_strict);
@@ -1095,7 +1095,7 @@ ip6r_contained_by_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip6r_contains_internal(PG_GETARG_IP6R_P(1),
                                            PG_GETARG_IP6R_P(0),
-                                           FALSE) );
+                                           false) );
 }
 
 PG_FUNCTION_INFO_V1(ip6_contains);
@@ -1216,7 +1216,7 @@ static bool gip6r_internal_consistent(IP6R * key, IP6R * query, StrategyNumber s
 /*
 ** The GiST Consistent method for IP ranges
 ** Should return false if for all data items x below entry,
-** the predicate x op query == FALSE, where op is the oper
+** the predicate x op query == false, where op is the oper
 ** corresponding to strategy in the pg_amop table.
 */
 PG_FUNCTION_INFO_V1(gip6r_consistent);
@@ -1261,16 +1261,16 @@ gip6r_union(PG_FUNCTION_ARGS)
     int numranges, i;
     IP6R *out = palloc(sizeof(IP6R));
     IP6R *tmp;
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "union\n");
 #endif
-  
+
     numranges = GISTENTRYCOUNT(entryvec);
     tmp = (IP6R *) DatumGetPointer(ent[0].key);
     *sizep = sizeof(IP6R);
     *out = *tmp;
-  
+
     for (i = 1; i < numranges; i++)
     {
         tmp = (IP6R *) DatumGetPointer(ent[i].key);
@@ -1279,7 +1279,7 @@ gip6r_union(PG_FUNCTION_ARGS)
         if (ip6_lessthan(&out->upper,&tmp->upper))
             out->upper = tmp->upper;
     }
-    
+
     PG_RETURN_IP6R_P(out);
 }
 
@@ -1355,12 +1355,12 @@ gip6r_penalty(PG_FUNCTION_ARGS)
 	 */
 
     *result = (float) pow(log(tmp+1) / log(2), 4);
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "penalty\n");
     fprintf(stderr, "\t%g\n", *result);
 #endif
-  
+
     PG_RETURN_POINTER(result);
 }
 
@@ -1548,7 +1548,7 @@ gip6r_same(PG_FUNCTION_ARGS)
         *result = (v1 == NULL && v2 == NULL);
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "same: %s\n", (*result ? "TRUE" : "FALSE"));
+    fprintf(stderr, "same: %s\n", (*result ? "true" : "false"));
 #endif
 
     PG_RETURN_POINTER(result);
@@ -1576,23 +1576,23 @@ gip6r_leaf_consistent(IP6R * key,
 #ifdef GIST_QUERY_DEBUG
     fprintf(stderr, "leaf_consistent, %d\n", strategy);
 #endif
-  
+
     switch (strategy)
     {
         case 1:   /* left contains right nonstrict */
-            return ip6r_contains_internal(key, query, TRUE);
+            return ip6r_contains_internal(key, query, true);
         case 2:   /* left contained in right nonstrict */
-            return ip6r_contains_internal(query, key, TRUE);
+            return ip6r_contains_internal(query, key, true);
         case 3:   /* left contains right strict */
-            return ip6r_contains_internal(key, query, FALSE);
+            return ip6r_contains_internal(key, query, false);
         case 4:   /* left contained in right strict */
-            return ip6r_contains_internal(query, key, FALSE);
+            return ip6r_contains_internal(query, key, false);
         case 5:   /* left overlaps right */
             return ip6r_overlaps_internal(key, query);
         case 6:   /* left equal right */
             return ip6r_equal(key, query);
         default:
-            return FALSE;
+            return false;
     }
 }
 
@@ -1616,7 +1616,7 @@ gip6r_internal_consistent(IP6R * key,
 #ifdef GIST_QUERY_DEBUG
     fprintf(stderr, "internal_consistent, %d\n", strategy);
 #endif
-  
+
     switch (strategy)
     {
         case 2:   /* left contained in right nonstrict */
@@ -1624,12 +1624,12 @@ gip6r_internal_consistent(IP6R * key,
         case 5:   /* left overlaps right */
             return ip6r_overlaps_internal(key, query);
         case 3:   /* left contains right strict */
-            return ip6r_contains_internal(key, query, FALSE);
+            return ip6r_contains_internal(key, query, false);
         case 1:   /* left contains right nonstrict */
         case 6:   /* left equal right */
-            return ip6r_contains_internal(key, query, TRUE);
+            return ip6r_contains_internal(key, query, true);
         default:
-            return FALSE;
+            return false;
     }
 }
 

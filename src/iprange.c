@@ -137,7 +137,7 @@ IPR_P ipr_pack(int af, IPR *val)
 		default:
 			iprange_internal_error();
 	}
-    
+
 	return out;
 }
 
@@ -211,7 +211,7 @@ iprange_recv(PG_FUNCTION_ARGS)
     IPR ipr;
 	unsigned af, bits, nbytes;
 
-	/* 
+	/*
 	 * This isn't quite the same format as inet/cidr but we keep reasonably
 	 * close for no very good reason.
 	 *
@@ -688,7 +688,7 @@ iprange_from_ipaddrs_internal(int af, IP4 a4, IP4 b4, IP6 *a6, IP6 *b6)
 			else
 				res.ip4r.lower = b4, res.ip4r.upper = a4;
 			PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET,&res));
-			
+
 		case PGSQL_AF_INET6:
 			if (ip6_lessthan(a6,b6))
 				res.ip6r.lower = *a6, res.ip6r.upper = *b6;
@@ -710,7 +710,7 @@ iprange_from_ip4s(PG_FUNCTION_ARGS)
 
 	PG_RETURN_DATUM(iprange_from_ipaddrs_internal(PGSQL_AF_INET, a, b, NULL, NULL));
 }
-			
+
 PG_FUNCTION_INFO_V1(iprange_from_ip6s);
 Datum
 iprange_from_ip6s(PG_FUNCTION_ARGS)
@@ -792,7 +792,7 @@ iprange_net_prefix(PG_FUNCTION_ARGS)
     IP_P ipp = PG_GETARG_IP_P(0);
 	IP ip;
     int pfxlen = PG_GETARG_INT32(1);
-	int af = ip_unpack(ipp,&ip); 
+	int af = ip_unpack(ipp,&ip);
 
 	PG_RETURN_DATUM(iprange_net_prefix_internal(af, ip.ip4, &ip.ip6, pfxlen));
 }
@@ -808,7 +808,7 @@ iprange_net_mask_internal(int af, IP4 ip4, IP6 *ip6, IP4 mask4, IP6 *mask6)
 		case PGSQL_AF_INET:
 			if (!ip4_valid_netmask(mask4))
 				break;
-			
+
 			res.ip4r.lower = ip4 & mask4;
 			res.ip4r.upper = ip4 | ~mask4;
 
@@ -817,7 +817,7 @@ iprange_net_mask_internal(int af, IP4 ip4, IP6 *ip6, IP4 mask4, IP6 *mask6)
 		case PGSQL_AF_INET6:
 			if (!ip6_valid_netmask(mask6->bits[0], mask6->bits[1]))
 				break;
-			
+
 			res.ip6r.lower.bits[0] = ip6->bits[0] & mask6->bits[0];
 			res.ip6r.lower.bits[1] = ip6->bits[1] & mask6->bits[1];
 			res.ip6r.upper.bits[0] = ip6->bits[0] | ~(mask6->bits[0]);
@@ -831,7 +831,7 @@ iprange_net_mask_internal(int af, IP4 ip4, IP6 *ip6, IP4 mask4, IP6 *mask6)
 			 errmsg("invalid netmask")));
 	PG_RETURN_VOID();
 }
-			
+
 PG_FUNCTION_INFO_V1(iprange_net_mask_ip4);
 Datum
 iprange_net_mask_ip4(PG_FUNCTION_ARGS)
@@ -848,7 +848,7 @@ iprange_net_mask_ip6(PG_FUNCTION_ARGS)
 {
     IP6 *ip = PG_GETARG_IP6_P(0);
     IP6 *mask = PG_GETARG_IP6_P(1);
-	
+
 	PG_RETURN_DATUM(iprange_net_mask_internal(PGSQL_AF_INET6, 0, ip, 0, mask));
 }
 
@@ -860,8 +860,8 @@ iprange_net_mask(PG_FUNCTION_ARGS)
     IP_P maskp = PG_GETARG_IP_P(1);
 	IP ip XINIT(IP_INITIALIZER);
 	IP mask XINIT(IP_INITIALIZER);
-	int af1 = ip_unpack(ipp,&ip); 
-	int af2 = ip_unpack(maskp,&mask); 
+	int af1 = ip_unpack(ipp,&ip);
+	int af2 = ip_unpack(maskp,&mask);
 
 	if (af1 != af2)
 		iprange_af_mismatch();
@@ -1191,7 +1191,7 @@ PG_FUNCTION_INFO_V1(iprange_overlaps);
 Datum
 iprange_overlaps(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_overlaps_internal(PG_GETARG_DATUM(0), 
+    PG_RETURN_BOOL( iprange_overlaps_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1)) );
 }
 
@@ -1201,7 +1201,7 @@ iprange_contains(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1),
-										  TRUE) );
+										  true) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_contains_strict);
@@ -1210,7 +1210,7 @@ iprange_contains_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1),
-										  FALSE) );
+										  false) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_contained_by);
@@ -1219,7 +1219,7 @@ iprange_contained_by(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
 										  PG_GETARG_DATUM(0),
-										  TRUE) );
+										  true) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_contained_by_strict);
@@ -1228,7 +1228,7 @@ iprange_contained_by_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
 										  PG_GETARG_DATUM(0),
-										  FALSE) );
+										  false) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_contains_ip);
@@ -1380,7 +1380,7 @@ iprange_size(PG_FUNCTION_ARGS)
 
 		case PGSQL_AF_INET:
 			PG_RETURN_FLOAT8(ip4r_metric(&ipr.ip4r));
-			
+
 		case PGSQL_AF_INET6:
 			PG_RETURN_FLOAT8(ip6r_metric(&ipr.ip6r));
 
@@ -1509,7 +1509,7 @@ gipr_compress(PG_FUNCTION_ARGS)
 
 		gistentryinit(*retval, PointerGetDatum(ipr_pack(key->af, &key->ipr)),
 					  entry->rel, entry->page,
-					  entry->offset, FALSE);
+					  entry->offset, false);
 	}
 
 	PG_RETURN_POINTER(retval);
@@ -1528,7 +1528,7 @@ gipr_decompress(PG_FUNCTION_ARGS)
 
 	gistentryinit(*retval, PointerGetDatum(key),
 				  entry->rel, entry->page,
-				  entry->offset, FALSE);
+				  entry->offset, false);
 
     PG_RETURN_POINTER(retval);
 }
@@ -1544,7 +1544,7 @@ gipr_fetch(PG_FUNCTION_ARGS)
 /*
 ** The GiST Consistent method for IP ranges
 ** Should return false if for all data items x below entry,
-** the predicate x op query == FALSE, where op is the oper
+** the predicate x op query == false, where op is the oper
 ** corresponding to strategy in the pg_amop table.
 */
 
@@ -1702,11 +1702,11 @@ gipr_union(PG_FUNCTION_ARGS)
     GISTENTRY *ent = GISTENTRYVEC(entryvec);
     int numranges;
 	IPR_KEY *out = palloc(sizeof(IPR_KEY));
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "union\n");
 #endif
-  
+
     numranges = GISTENTRYCOUNT(entryvec);
 
 	gipr_union_internal(out, NULL, NULL, ent, numranges);
@@ -1796,19 +1796,19 @@ gipr_penalty(PG_FUNCTION_ARGS)
 
 				tmp = pow(log(tmp+1) / log(2), 4);
 				break;
-		   
+
 			default:
 				iprange_internal_error();
 		}
 	}
 
 	*result = (float) tmp;
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "penalty\n");
     fprintf(stderr, "\t%g\n", *result);
 #endif
-  
+
     PG_RETURN_POINTER(result);
 }
 
@@ -1898,7 +1898,7 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 			v->spl_left[v->spl_nleft++] = i;
 		for (; i <= maxoff; i = OffsetNumberNext(i))
 			v->spl_right[v->spl_nright++] = i;
-		
+
 		PG_RETURN_POINTER(v);
     }
 
@@ -1944,7 +1944,7 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 		for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 		{
 			cur = (IPR_KEY *) DatumGetPointer(ent[i].key);
-			if ((cur->ipr.ip4r.upper - pageunion.ipr.ip4r.lower) 
+			if ((cur->ipr.ip4r.upper - pageunion.ipr.ip4r.lower)
 				< (pageunion.ipr.ip4r.upper - cur->ipr.ip4r.lower))
 				ADDLIST(listL, unionL, posL, i);
 			else
@@ -1957,7 +1957,7 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 		{
 			IP6 diff1;
 			IP6 diff2;
-			
+
 			cur = (IPR_KEY *) DatumGetPointer(ent[i].key);
 			ip6_sub(&cur->ipr.ip6r.upper, &pageunion.ipr.ip6r.lower, &diff1);
 			ip6_sub(&pageunion.ipr.ip6r.upper, &cur->ipr.ip6r.lower, &diff2);
@@ -1993,7 +1993,7 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 		{
 			IP6 diff1;
 			IP6 diff2;
-			
+
 			cur = arr[i].key;
 			if (pageunion.af == PGSQL_AF_INET)
 			{
@@ -2068,7 +2068,7 @@ gipr_same(PG_FUNCTION_ARGS)
 	}
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "same: %s\n", (*result ? "TRUE" : "FALSE"));
+    fprintf(stderr, "same: %s\n", (*result ? "true" : "false"));
 #endif
 
     PG_RETURN_POINTER(result);
@@ -2144,13 +2144,13 @@ gipr_leaf_consistent(IPR_KEY *key,
 		switch (strategy)
 		{
 			case 1:   /* left contains right nonstrict */
-				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, TRUE);
+				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, true);
 			case 2:   /* left contained in right nonstrict */
-				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, TRUE);
+				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, true);
 			case 3:   /* left contains right strict */
-				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, FALSE);
+				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, false);
 			case 4:   /* left contained in right strict */
-				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, FALSE);
+				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, false);
 			case 5:   /* left overlaps right */
 				return ip4r_overlaps_internal(&key->ipr.ip4r, &query.ip4r);
 			case 6:   /* left equal right */
@@ -2162,20 +2162,20 @@ gipr_leaf_consistent(IPR_KEY *key,
 		switch (strategy)
 		{
 			case 1:   /* left contains right nonstrict */
-				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, TRUE);
+				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, true);
 			case 2:   /* left contained in right nonstrict */
-				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, TRUE);
+				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, true);
 			case 3:   /* left contains right strict */
-				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, FALSE);
+				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, false);
 			case 4:   /* left contained in right strict */
-				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, FALSE);
+				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, false);
 			case 5:   /* left overlaps right */
 				return ip6r_overlaps_internal(&key->ipr.ip6r, &query.ip6r);
 			case 6:   /* left equal right */
 				return ip6r_equal(&key->ipr.ip6r, &query.ip6r);
 		}
     }
-	return FALSE;
+	return false;
 }
 
 /* logic notes:
@@ -2217,10 +2217,10 @@ gipr_internal_consistent(IPR_KEY *key,
 			case 5:   /* left overlaps right */
 				return ip4r_overlaps_internal(&key->ipr.ip4r, &query.ip4r);
 			case 3:   /* left contains right strict */
-				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, FALSE);
+				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, false);
 			case 1:   /* left contains right nonstrict */
 			case 6:   /* left equal right */
-				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, TRUE);
+				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, true);
 		}
 	}
 	else if (af == PGSQL_AF_INET6)
@@ -2232,13 +2232,13 @@ gipr_internal_consistent(IPR_KEY *key,
 			case 5:   /* left overlaps right */
 				return ip6r_overlaps_internal(&key->ipr.ip6r, &query.ip6r);
 			case 3:   /* left contains right strict */
-				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, FALSE);
+				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, false);
 			case 1:   /* left contains right nonstrict */
 			case 6:   /* left equal right */
-				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, TRUE);
+				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, true);
 		}
     }
-	return FALSE;
+	return false;
 }
 
 /* end */

@@ -71,12 +71,12 @@ bool ip4r_from_cidr(IP4 prefix, unsigned masklen, IP4R *ipr)
 {
     uint32 mask = hostmask(masklen);
     if (masklen > 32)
-        return FALSE;
+        return false;
     if (prefix & mask)
-        return FALSE;
+        return false;
     ipr->lower = prefix;
     ipr->upper = prefix | mask;
-    return TRUE;
+    return true;
 }
 
 static inline
@@ -84,10 +84,10 @@ bool ip4r_from_inet(IP4 addr, unsigned masklen, IP4R *ipr)
 {
     uint32 mask = hostmask(masklen);
     if (masklen > 32)
-        return FALSE;
+        return false;
     ipr->lower = addr & ~mask;
     ipr->upper = addr | mask;
-    return TRUE;
+    return true;
 }
 
 

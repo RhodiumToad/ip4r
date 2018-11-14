@@ -106,7 +106,7 @@ bool ip6_valid_netmask(uint64 maskhi, uint64 masklo)
     else if (masklo == 0)
         d = ~maskhi + 1;
     else
-        return FALSE;
+        return false;
 
     /* at this point, d can be:
      *  0 if mask was 0x00000000 (valid)
@@ -117,7 +117,7 @@ bool ip6_valid_netmask(uint64 maskhi, uint64 masklo)
     if (!(d & 0xFFFFFFFFUL))
         d >>= 32;
     if (!d)
-        return TRUE;
+        return true;
 
     fbit = ffs((uint32)d);
     return ((uint32)(1U) << (fbit-1)) == d;
@@ -180,13 +180,13 @@ bool ip6r_from_cidr(IP6 *prefix, unsigned masklen, IP6R *ipr)
     uint64 mask_lo = hostmask6_lo(masklen);
     uint64 mask_hi = hostmask6_hi(masklen);
     if (masklen > 128)
-        return FALSE;
+        return false;
     if ((prefix->bits[0] & mask_hi) || (prefix->bits[1] & mask_lo))
-        return FALSE;
+        return false;
     ipr->upper.bits[0] = (prefix->bits[0] | mask_hi);
     ipr->upper.bits[1] = (prefix->bits[1] | mask_lo);
     ipr->lower = *prefix;
-    return TRUE;
+    return true;
 }
 
 static inline
@@ -195,12 +195,12 @@ bool ip6r_from_inet(IP6 *addr, unsigned masklen, IP6R *ipr)
     uint64 mask_lo = hostmask6_lo(masklen);
     uint64 mask_hi = hostmask6_hi(masklen);
     if (masklen > 128)
-        return FALSE;
+        return false;
     ipr->lower.bits[0] = (addr->bits[0] & ~mask_hi);
     ipr->lower.bits[1] = (addr->bits[1] & ~mask_lo);
     ipr->upper.bits[0] = (addr->bits[0] | mask_hi);
     ipr->upper.bits[1] = (addr->bits[1] | mask_lo);
-    return TRUE;
+    return true;
 }
 
 /* helpers for union/intersection for indexing */

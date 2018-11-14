@@ -19,10 +19,10 @@ bool ip4r_from_str(char *str, IP4R *ipr)
         case 0:     /* no separator, must be single ip4 addr */
         {
             if (!ip4_raw_input(str, &ip))
-                return FALSE;
+                return false;
             ipr->lower = ip;
             ipr->upper = ip;
-            return TRUE;
+            return true;
         }
 
         case '-':   /* lower-upper */
@@ -30,14 +30,14 @@ bool ip4r_from_str(char *str, IP4R *ipr)
             char *rest = str + pos + 1;
 
             if (pos >= sizeof(buf))
-                return FALSE;
+                return false;
             memcpy(buf, str, pos);
             buf[pos] = 0;
             if (!ip4_raw_input(buf, &ip))
-                return FALSE;
+                return false;
             ipr->lower = ip;
             if (!ip4_raw_input(rest, &ip))
-                return FALSE;
+                return false;
             if (!ip4_lessthan(ip, ipr->lower))
                 ipr->upper = ip;
             else
@@ -45,7 +45,7 @@ bool ip4r_from_str(char *str, IP4R *ipr)
                 ipr->upper = ipr->lower;
                 ipr->lower = ip;
             }
-            return TRUE;
+            return true;
         }
 
         case '/':  /* prefix/len */
@@ -55,20 +55,20 @@ bool ip4r_from_str(char *str, IP4R *ipr)
             char dummy;
 
             if (pos >= sizeof(buf))
-                return FALSE;
+                return false;
             memcpy(buf, str, pos);
             buf[pos] = 0;
             if (!ip4_raw_input(buf, &ip))
-                return FALSE;
+                return false;
             if (rest[strspn(rest,"0123456789")])
-                return FALSE;
+                return false;
             if (sscanf(rest, "%u%c", &pfxlen, &dummy) != 1)
-                return FALSE;
+                return false;
             return ip4r_from_cidr(ip, pfxlen, ipr);
         }
 
         default:
-            return FALSE;      /* can't happen */
+            return false;      /* can't happen */
     }
 }
 
@@ -764,7 +764,7 @@ ip4r_net_prefix(PG_FUNCTION_ARGS)
     {
         IP4 mask = netmask(pfxlen);
         IP4R *res = palloc(sizeof(IP4R));
-    
+
         res->lower = ip & mask;
         res->upper = ip | ~mask;
 
@@ -788,7 +788,7 @@ ip4r_net_mask(PG_FUNCTION_ARGS)
 
     {
         IP4R *res = palloc(sizeof(IP4R));
-    
+
         res->lower = ip & mask;
         res->upper = ip | ~mask;
 
@@ -909,7 +909,7 @@ PG_FUNCTION_INFO_V1(ip4r_overlaps);
 Datum
 ip4r_overlaps(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( ip4r_overlaps_internal(PG_GETARG_IP4R_P(0), 
+    PG_RETURN_BOOL( ip4r_overlaps_internal(PG_GETARG_IP4R_P(0),
                                            PG_GETARG_IP4R_P(1)) );
 }
 
@@ -919,7 +919,7 @@ ip4r_contains(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip4r_contains_internal(PG_GETARG_IP4R_P(0),
                                            PG_GETARG_IP4R_P(1),
-                                           TRUE) );
+                                           true) );
 }
 
 PG_FUNCTION_INFO_V1(ip4r_contains_strict);
@@ -928,7 +928,7 @@ ip4r_contains_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip4r_contains_internal(PG_GETARG_IP4R_P(0),
                                            PG_GETARG_IP4R_P(1),
-                                           FALSE) );
+                                           false) );
 }
 
 PG_FUNCTION_INFO_V1(ip4r_contained_by);
@@ -937,7 +937,7 @@ ip4r_contained_by(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip4r_contains_internal(PG_GETARG_IP4R_P(1),
                                            PG_GETARG_IP4R_P(0),
-                                           TRUE) );
+                                           true) );
 }
 
 PG_FUNCTION_INFO_V1(ip4r_contained_by_strict);
@@ -946,7 +946,7 @@ ip4r_contained_by_strict(PG_FUNCTION_ARGS)
 {
     PG_RETURN_BOOL( ip4r_contains_internal(PG_GETARG_IP4R_P(1),
                                            PG_GETARG_IP4R_P(0),
-                                           FALSE) );
+                                           false) );
 }
 
 PG_FUNCTION_INFO_V1(ip4_contains);
@@ -1017,7 +1017,7 @@ ip4r_size_exact(PG_FUNCTION_ARGS)
 }
 
 PG_FUNCTION_INFO_V1(ip4r_prefixlen);
-Datum 
+Datum
 ip4r_prefixlen(PG_FUNCTION_ARGS)
 {
     IP4R *ipr = PG_GETARG_IP4R_P(0);
@@ -1081,7 +1081,7 @@ static bool gip4r_internal_consistent(IP4R * key, IP4R * query, StrategyNumber s
 /*
 ** The GiST Consistent method for IP ranges
 ** Should return false if for all data items x below entry,
-** the predicate x op query == FALSE, where op is the oper
+** the predicate x op query == false, where op is the oper
 ** corresponding to strategy in the pg_amop table.
 */
 PG_FUNCTION_INFO_V1(gip4r_consistent);
@@ -1126,16 +1126,16 @@ gip4r_union(PG_FUNCTION_ARGS)
     int numranges, i;
     IP4R *out = (IP4R *) palloc(sizeof(IP4R));
     IP4R *tmp;
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "union\n");
 #endif
-  
+
     numranges = GISTENTRYCOUNT(entryvec);
     tmp = (IP4R *) DatumGetPointer(ent[0].key);
     *sizep = sizeof(IP4R);
     *out = *tmp;
-  
+
     for (i = 1; i < numranges; i++)
     {
         tmp = (IP4R *) DatumGetPointer(ent[i].key);
@@ -1144,7 +1144,7 @@ gip4r_union(PG_FUNCTION_ARGS)
         if (tmp->upper > out->upper)
             out->upper = tmp->upper;
     }
-    
+
     PG_RETURN_IP4R_P(out);
 }
 
@@ -1200,12 +1200,12 @@ gip4r_penalty(PG_FUNCTION_ARGS)
     tmp1 = ip4r_metric(&ud);
 
     *result = tmp1 - tmp2;
-  
+
 #ifdef GIST_DEBUG
     fprintf(stderr, "penalty\n");
     fprintf(stderr, "\t%g\n", *result);
 #endif
-  
+
     PG_RETURN_POINTER(result);
 }
 
@@ -1383,7 +1383,7 @@ gip4r_same(PG_FUNCTION_ARGS)
         *result = (v1 == NULL && v2 == NULL);
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "same: %s\n", (*result ? "TRUE" : "FALSE"));
+    fprintf(stderr, "same: %s\n", (*result ? "true" : "false"));
 #endif
 
     PG_RETURN_POINTER(result);
@@ -1411,23 +1411,23 @@ gip4r_leaf_consistent(IP4R * key,
 #ifdef GIST_QUERY_DEBUG
     fprintf(stderr, "leaf_consistent, %d\n", strategy);
 #endif
-  
+
     switch (strategy)
     {
         case 1:   /* left contains right nonstrict */
-            return ip4r_contains_internal(key, query, TRUE);
+            return ip4r_contains_internal(key, query, true);
         case 2:   /* left contained in right nonstrict */
-            return ip4r_contains_internal(query, key, TRUE);
+            return ip4r_contains_internal(query, key, true);
         case 3:   /* left contains right strict */
-            return ip4r_contains_internal(key, query, FALSE);
+            return ip4r_contains_internal(key, query, false);
         case 4:   /* left contained in right strict */
-            return ip4r_contains_internal(query, key, FALSE);
+            return ip4r_contains_internal(query, key, false);
         case 5:   /* left overlaps right */
             return ip4r_overlaps_internal(key, query);
         case 6:   /* left equal right */
             return ip4r_equal(key, query);
         default:
-            return FALSE;
+            return false;
     }
 }
 
@@ -1451,7 +1451,7 @@ gip4r_internal_consistent(IP4R * key,
 #ifdef GIST_QUERY_DEBUG
     fprintf(stderr, "internal_consistent, %d\n", strategy);
 #endif
-  
+
     switch (strategy)
     {
         case 2:   /* left contained in right nonstrict */
@@ -1459,12 +1459,12 @@ gip4r_internal_consistent(IP4R * key,
         case 5:   /* left overlaps right */
             return ip4r_overlaps_internal(key, query);
         case 3:   /* left contains right strict */
-            return ip4r_contains_internal(key, query, FALSE);
+            return ip4r_contains_internal(key, query, false);
         case 1:   /* left contains right nonstrict */
         case 6:   /* left equal right */
-            return ip4r_contains_internal(key, query, TRUE);
+            return ip4r_contains_internal(key, query, true);
         default:
-            return FALSE;
+            return false;
     }
 }
 
