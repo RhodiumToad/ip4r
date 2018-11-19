@@ -10,19 +10,26 @@ DO $d$
     r record;
   BEGIN
     IF current_setting('server_version_num')::integer >= 90600 THEN
-      FOR r IN SELECT amname, opcname, amvalidate(opc.oid) as valid
+      FOR r IN SELECT amname,
+                      CASE amname WHEN 'btree' THEN 6
+		                  WHEN 'hash' THEN 6
+				  WHEN 'gist' THEN 3
+				  ELSE 0 END as expected,
+		      count(nullif(amvalidate(opc.oid),false)) as actual
                  FROM pg_opclass opc
-	              LEFT JOIN pg_am am ON am.oid = opcmethod
-	        WHERE opcintype IN ('ip4'::regtype,
-	                            'ip4r'::regtype,
-   	                            'ip6'::regtype,
-	                            'ip6r'::regtype,
-   	                            'ipaddress'::regtype,
-	                            'iprange'::regtype)
-	        ORDER BY amname,opcname
+                      LEFT JOIN pg_am am ON am.oid = opcmethod
+                WHERE opcintype IN ('ip4'::regtype,
+                                    'ip4r'::regtype,
+                                    'ip6'::regtype,
+                                    'ip6r'::regtype,
+                                    'ipaddress'::regtype,
+                                    'iprange'::regtype)
+                GROUP BY amname
+                ORDER BY amname
       LOOP
-        RAISE INFO '% operator class % %', r.amname, r.opcname,
-	           CASE WHEN r.valid THEN 'validated' ELSE 'did not validate' END;
+         IF r.expected IS DISTINCT FROM r.actual THEN
+           RAISE INFO '% % operator classes did not validate', r.expected - r.actual, r.amname;
+         END IF;
       END LOOP;
     END IF;
   END;
