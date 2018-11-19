@@ -3,7 +3,8 @@ MODULE_big = ip4r
 
 ifndef NO_EXTENSION
 EXTENSION= ip4r
-SRC_SQL	= ip4r--2.2.sql \
+SRC_SQL	= ip4r--2.4.sql \
+	  ip4r--2.2--2.4.sql \
 	  ip4r--2.1--2.2.sql \
 	  ip4r--2.0--2.1.sql \
 	  ip4r--unpackaged2.1--2.1.sql \
@@ -65,12 +66,12 @@ ifndef EXTENSION
 
 ifeq ($(filter-out 8.4, $(MAJORVERSION)),)
 
-ip4r.sql.in: $(srcdir)/scripts/ip4r--2.2.sql $(srcdir)/tools/legacy.sed
+ip4r.sql.in: $(srcdir)/scripts/ip4r--2.4.sql $(srcdir)/tools/legacy.sed
 	sed -f $(srcdir)/tools/legacy.sed $< | sed -e '/^DO /,/^[$$]/d' >$@
 
 else
 
-ip4r.sql.in: $(srcdir)/scripts/ip4r--2.2.sql $(srcdir)/tools/legacy.sed
+ip4r.sql.in: $(srcdir)/scripts/ip4r--2.4.sql $(srcdir)/tools/legacy.sed
 	sed -f $(srcdir)/tools/legacy.sed $< >$@
 
 endif
@@ -79,11 +80,11 @@ endif
 # the sql/ subdir, and looks for that only in $(srcdir). So disable
 # legacy regression tests in vpath build.
 ifndef VPATH
-sql/ip4r-legacy.sql: sql/ip4r.sql legacy-r.sed
-	sed -f legacy-r.sed $< >$@
+sql/ip4r-legacy.sql: sql/ip4r.sql tools/legacy-r.sed
+	sed -f tools/legacy-r.sed $< >$@
 
-expected/ip4r-legacy.out: expected/ip4r.out
-	sed -f legacy-r.sed $< | sed -e '/^\\i /,+1d' >$@
+expected/ip4r-legacy.out: expected/ip4r.out tools/legacy-r.sed
+	sed -f tools/legacy-r.sed $< | sed -e '/^\\i /,+1d' >$@
 
 installcheck: sql/ip4r-legacy.sql expected/ip4r-legacy.out
 else

@@ -89,6 +89,39 @@ bool ip4r_from_inet(IP4 addr, unsigned masklen, IP4R *ipr)
     return true;
 }
 
+static inline
+bool ip4r_split_cidr(IP4R *val, IP4R *res)
+{
+	IP4 lo = val->lower;
+	IP4 hi = val->upper;
+	int len = 32;
+	IP4 mask = 1;
+
+	res->lower = lo;
+	res->upper = hi;
+
+	if (masklen(lo,hi) <= 32U)
+		return true;
+
+	/*
+	 * We know that all these cases are impossible because the CIDR check
+	 * would catch them:
+	 *
+	 *  lo==hi
+	 *  lo==0 && hi==~0
+	 *  lo==~0
+	 *
+	 * Therefore this loop must terminate before the mask overflows
+	 */
+	while ((lo & mask) == 0 && (lo | mask) <= hi)
+		--len, mask = (mask << 1) | 1;
+	mask >>= 1;
+
+	res->upper = lo | mask;
+	val->lower = (lo | mask) + 1;
+
+	return false;
+}
 
 /* comparisons */
 

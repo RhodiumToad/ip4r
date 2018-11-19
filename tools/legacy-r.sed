@@ -1,5 +1,5 @@
 #
-/^CREATE EXTENSION/c\
+/^..CUT-HERE/,/^..CUT-END/c\
 SET client_min_messages = warning;\
 \\set ECHO none\
 \\i ip4r.sql\

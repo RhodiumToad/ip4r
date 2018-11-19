@@ -2,6 +2,50 @@
 IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 ===========================================================
 
+CHANGES in version 2.4:
+=======================
+
+ * Add new cidr_split functions to decompose an arbitrary range into
+   a set of CIDR blocks.
+
+ * Add casts to and from bit and bytea types.
+
+ * Support new hash functions for hash partitioning.
+
+ * Fix a historical oversight with the hash function for iprange, in
+   which it would return different values for ip6 cidr ranges than the
+   ip6r hash function. This was not a bug in that no queries would
+   give wrong answers, but it would prevent any future reorganization
+   of the opclass to handle cross-type comparisons. Since allowing
+   hash partitioning has the practical effect of casting the hash
+   function in stone (far more so than hash indexes do), best to fix
+   this now.
+
+   The result of the function iprangehash(iprange) is NOT changed by
+   this update, on the assumption that it might have been in use for
+   inheritance partitioning or other explicit uses. Instead, a new
+   hash function is added for the opclass to use.
+
+   NOTE: This version requires any hash indexes on iprange columns to
+   be rebuilt. An ALTER EXTENSION ... UPDATE command will refuse to
+   run if it detects any such indexes (it will report the offending
+   indexes in INFO messages to the client). You can automatically drop
+   or recreate affected indexes by performing one of these commands
+   before the ALTER EXTENSION:
+
+     SET ip4r.update_indexes = 'drop';
+     SET ip4r.update_indexes = 'rebuild';
+
+   The value 'drop' will drop any iprange hash indexes and complete
+   the upgrade. If any indexes were dropped it will leave behind a new
+   table named ip4r_update_to_2_4.update_indexes containing the
+   affected table and index information, including the CREATE INDEX
+   command as obtained by pg_get_indexdef(). This table is not part of
+   the extension and can be dropped when the data is no longer needed.
+   The value 'rebuild' will cause the update script to perform the
+   needed CREATE INDEX commands itself (which of course may take some
+   time).
+
 CHANGES in version 2.3:
 =======================
 

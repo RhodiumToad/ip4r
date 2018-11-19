@@ -1,6 +1,33 @@
 --
 
+/*CUT-HERE*/
 CREATE EXTENSION ip4r;
+
+-- Check whether any of our opclasses fail amvalidate
+
+DO $d$
+  DECLARE
+    r record;
+  BEGIN
+    IF current_setting('server_version_num')::integer >= 90600 THEN
+      FOR r IN SELECT amname, opcname, amvalidate(opc.oid) as valid
+                 FROM pg_opclass opc
+	              LEFT JOIN pg_am am ON am.oid = opcmethod
+	        WHERE opcintype IN ('ip4'::regtype,
+	                            'ip4r'::regtype,
+   	                            'ip6'::regtype,
+	                            'ip6r'::regtype,
+   	                            'ipaddress'::regtype,
+	                            'iprange'::regtype)
+	        ORDER BY amname,opcname
+      LOOP
+        RAISE INFO '% operator class % %', r.amname, r.opcname,
+	           CASE WHEN r.valid THEN 'validated' ELSE 'did not validate' END;
+      END LOOP;
+    END IF;
+  END;
+$d$;
+/*CUT-END*/
 
 \set VERBOSITY terse
 
@@ -1596,6 +1623,64 @@ select '0.0.0.0/0'::iprange::ip6r;
 select '::'::ipaddress::ip4;
 select '0.0.0.0'::ipaddress::ip6;
 
+-- bit casts
+
+select (x'01020304')::ip4;
+select (x'fff0fff1fff2fff3000000000000fff4')::ip6;
+select (x'01020304')::ipaddress;
+select (x'fff0fff1fff2fff3000000000000fff4')::ipaddress;
+
+select (b'0001')::varbit::ip4r;
+select (b'0001')::varbit::ip6r;
+select (x'fff0fff1fff2fff3000000000000fff')::varbit::ip6r;
+
+select (ip4 '1.2.3.4')::varbit;
+select (ip6 'fff0:fff1:fff2:fff3::fff4')::varbit;
+select (ipaddress '1.2.3.4')::varbit;
+select (ipaddress 'fff0:fff1:fff2:fff3::fff4')::varbit;
+
+select (ip4r '1.2.3.0/24')::varbit;
+select (ip6r 'fff0::/12')::varbit;
+select (ip6r 'fff0::/127')::varbit;
+
+select (iprange '-')::varbit;
+select (iprange '1.2.3.0/24')::varbit;
+select (iprange '1.2.3.1-1.2.3.2')::varbit;
+select (iprange 'fff0::/12')::varbit;
+select (iprange 'fff0::0001-fff0::0002')::varbit;
+
+-- invalid bit casts
+
+select (x'0102030')::ip4;
+select (x'0102030405')::ip4;
+select (x'fff0fff1fff2fff3000000000000fff')::ip6;
+select (x'fff0fff1fff2fff3000000000000fff4f')::ip6;
+select (x'0102030')::ipaddress;
+select (x'0102030405')::ipaddress;
+select (x'fff0fff1fff2fff3000000000000fff')::ipaddress;
+select (x'fff0fff1fff2fff3000000000000fff4f')::ipaddress;
+
+-- bytea casts
+
+select (decode('01020304','hex'))::ip4;
+select (decode('fff0fff1fff2fff3000000000000fff4','hex'))::ip6;
+select (decode('01020304','hex'))::ipaddress;
+select (decode('fff0fff1fff2fff3000000000000fff4','hex'))::ipaddress;
+
+select encode((ip4 '1.2.3.4')::bytea,'hex');
+select encode((ip6 'fff0:fff1:fff2:fff3::fff4')::bytea,'hex');
+select encode((ipaddress '1.2.3.4')::bytea,'hex');
+select encode((ipaddress 'fff0:fff1:fff2:fff3::fff4')::bytea,'hex');
+
+-- invalid bytea casts
+
+select (decode('010203','hex'))::ip4;
+select (decode('0102030405','hex'))::ip4;
+select (decode('fff0fff1fff2fff3000000000000ff','hex'))::ip6;
+select (decode('0102030405','hex'))::ipaddress;
+select (decode('fff0fff1fff2fff3000000000000ff','hex'))::ipaddress;
+select (decode('fff0fff1fff2fff3000000000000ffffff','hex'))::ipaddress;
+
 -- constructor functions
 
 select ip4r('0.0.0.0','255.255.255.255');
@@ -1762,6 +1847,42 @@ select iprange_inter('0.0.0.0-3.0.0.0','2.0.0.0-4.0.0.0');
 select iprange_inter('2000::/16','3000::/16');
 select iprange_inter('2000::-4000::','3000::-5000::');
 select iprange_inter('::/0','3000::-5000::');
+
+-- split
+
+select * from cidr_split(ip4r '1.2.3.4-5.6.7.8');
+select * from cidr_split(ip4r '1.2.3.5-5.6.7.7');
+select * from cidr_split(ip4r '1.0.0.0-1.0.255.255');
+select * from cidr_split(ip4r '0.0.0.0-255.255.255.255');
+select * from cidr_split(ip4r '0.0.0.0-0.0.0.9');
+select * from cidr_split(ip4r '255.255.255.251-255.255.255.255');
+
+select * from cidr_split(ip6r 'ffff::1234-ffff::1243');
+select * from cidr_split(ip6r 'ffff:0:0:1234::-ffff:0:0:1243::');
+select * from cidr_split(ip6r 'aaaa::cdef-aaaa::fedc');
+select * from cidr_split(ip6r 'ffff:0:0:aaaa::/64');
+select * from cidr_split(ip6r '::-::0009');
+select * from cidr_split(ip6r 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:fff3-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff');
+
+select * from cidr_split(iprange '1.2.3.4-5.6.7.8');
+select * from cidr_split(iprange '1.2.3.5-5.6.7.7');
+select * from cidr_split(iprange 'ffff::1234-ffff::1243');
+select * from cidr_split(iprange 'aaaa::cdef-aaaa::fedc');
+select * from cidr_split(iprange '1.0.0.0/16');
+select * from cidr_split(iprange 'ffff:0:0:aaaa::/64');
+select * from cidr_split(iprange '-');
+
+-- rescan
+
+with d(a) as (values (ip4r '1.2.3.4-1.2.4.3'),(ip4r '10.2.3.5-10.2.4.4'))
+select *, (select * from cidr_split(a) limit 1) as s from d;
+
+with d(a) as (values (ip6r 'ffff::1234-ffff::1243'),(ip6r 'aaaa::cdef-aaaa::fedc'))
+select *, (select * from cidr_split(a) limit 1) as s from d;
+
+with d(a) as (values (iprange '-'),(iprange '1.2.3.4-1.2.4.3'),
+                     (iprange 'aaaa::fedc-aaaa::cdef'),(iprange '-'))
+select *, (select * from cidr_split(a) limit 1) as s from d;
 
 -- operators
 

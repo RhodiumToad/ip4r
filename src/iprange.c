@@ -362,6 +362,18 @@ iprange_send(PG_FUNCTION_ARGS)
     PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
+/* Unfortunately due to a historical oversight, this function produces
+ * different hash values for ipv6 cidr ranges than ip6rhash. This is
+ * undesirable for a hash function since it would block future attempts to add
+ * cross-type comparisons, and if this behaviour were to be propagated into
+ * the extended hash function then it would become cast in stone, thanks to
+ * hash partitioning.
+ *
+ * So we make the old sql-callable function name keep using the old hash, so
+ * that anyone manually using iprangehash for partitioning or whatever is
+ * unaffected, but change the actual hash opclass to use new names.
+ */
+
 PG_FUNCTION_INFO_V1(iprange_hash);
 Datum
 iprange_hash(PG_FUNCTION_ARGS)
@@ -369,6 +381,44 @@ iprange_hash(PG_FUNCTION_ARGS)
     IPR_P arg1 = PG_GETARG_IPR_P(0);
 
     return hash_any((void *) VARDATA_ANY(arg1), VARSIZE_ANY_EXHDR(arg1));
+}
+
+/* below are the fixed hash functions
+ */
+
+PG_FUNCTION_INFO_V1(iprange_hash_new);
+Datum
+iprange_hash_new(PG_FUNCTION_ARGS)
+{
+    IPR_P arg1 = PG_GETARG_IPR_P(0);
+	IPR tmp;
+	uint32 vsize = VARSIZE_ANY_EXHDR(arg1);
+
+	if (vsize <= sizeof(IP4R) || vsize == sizeof(IP6R))
+		return hash_any((void *) VARDATA_ANY(arg1), vsize);
+
+	if (ipr_unpack(arg1,&tmp) != PGSQL_AF_INET6)
+		iprange_internal_error();
+
+	return hash_any((void *) &tmp, sizeof(IP6R));
+}
+
+PG_FUNCTION_INFO_V1(iprange_hash_extended);
+Datum
+iprange_hash_extended(PG_FUNCTION_ARGS)
+{
+    IPR_P arg1 = PG_GETARG_IPR_P(0);
+	IPR tmp;
+	uint32 vsize = VARSIZE_ANY_EXHDR(arg1);
+	uint32 seed = DatumGetUInt32(PG_GETARG_DATUM(1));
+
+	if (vsize <= sizeof(IP4R) || vsize == sizeof(IP6R))
+		return hash_any_extended((void *) VARDATA_ANY(arg1), vsize, seed);
+
+	if (ipr_unpack(arg1,&tmp) != PGSQL_AF_INET6)
+		iprange_internal_error();
+
+	return hash_any_extended((void *) &tmp, sizeof(IP6R), seed);
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_to_text);
@@ -673,6 +723,58 @@ iprange_cast_to_ip6r(PG_FUNCTION_ARGS)
 	PG_RETURN_IP6R_P(res);
 }
 
+PG_FUNCTION_INFO_V1(iprange_cast_to_bit);
+Datum
+iprange_cast_to_bit(PG_FUNCTION_ARGS)
+{
+    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR ipr;
+	int af = ipr_unpack(iprp, &ipr);
+	unsigned bits;
+	VarBit *res;
+	int len;
+	unsigned char buf[16];
+
+	switch (af)
+	{
+		case 0:
+			PG_RETURN_NULL();
+
+		case PGSQL_AF_INET:
+			bits = masklen(ipr.ip4r.lower, ipr.ip4r.upper);
+			if (bits > ipr_af_maxbits(PGSQL_AF_INET))
+				PG_RETURN_NULL();
+
+			{
+				IP4 ip = ipr.ip4r.lower;
+				buf[0] = (ip >> 24);
+				buf[1] = (ip >> 16);
+				buf[2] = (ip >>  8);
+				buf[3] = (ip      );
+			}
+			break;
+
+		case PGSQL_AF_INET6:
+			bits = masklen6(&ipr.ip6r.lower, &ipr.ip6r.upper);
+			if (bits > ipr_af_maxbits(PGSQL_AF_INET6))
+				PG_RETURN_NULL();
+
+			ip6_serialize(&ipr.ip6r.lower, buf);
+			break;
+
+		default:
+			iprange_internal_error();
+	}
+
+	len = VARBITTOTALLEN(bits);
+	res = palloc0(len);
+	SET_VARSIZE(res, len);
+	VARBITLEN(res) = bits;
+
+	memcpy(VARBITS(res), buf, VARBITBYTES(res));
+	PG_RETURN_VARBIT_P(res);
+}
+
 
 static
 Datum
@@ -797,7 +899,6 @@ iprange_net_prefix(PG_FUNCTION_ARGS)
 	PG_RETURN_DATUM(iprange_net_prefix_internal(af, ip.ip4, &ip.ip6, pfxlen));
 }
 
-
 static Datum
 iprange_net_mask_internal(int af, IP4 ip4, IP6 *ip6, IP4 mask4, IP6 *mask6)
 {
@@ -868,7 +969,6 @@ iprange_net_mask(PG_FUNCTION_ARGS)
 
 	PG_RETURN_DATUM(iprange_net_mask_internal(af1, ip.ip4, &ip.ip6, mask.ip4, &mask.ip6));
 }
-
 
 PG_FUNCTION_INFO_V1(iprange_lower);
 Datum
@@ -974,6 +1074,89 @@ iprange_family(PG_FUNCTION_ARGS)
 	}
 }
 
+/*
+ * Decompose an arbitrary range into CIDRs
+ */
+PG_FUNCTION_INFO_V1(iprange_cidr_split);
+Datum
+iprange_cidr_split(PG_FUNCTION_ARGS)
+{
+	FuncCallContext *funcctx;
+	IPR *val;
+	IPR res;
+	int af;
+
+	if (SRF_IS_FIRSTCALL())
+	{
+		IPR_P *in = PG_GETARG_IPR_P(0);
+
+		funcctx = SRF_FIRSTCALL_INIT();
+		val = MemoryContextAlloc(funcctx->multi_call_memory_ctx,
+								 sizeof(IPR));
+		af = ipr_unpack(in, val);
+		funcctx->user_fctx = val;
+		/*
+		 * We abuse max_calls, which is ignored by the api and only exists as
+		 * a convenience variable, to store the current address family. But
+		 * out of sheer aesthetics (and for debugging purposes) we store a
+		 * value that does actually represent a (loose) upper bound on the row
+		 * count.
+		 */
+		funcctx->max_calls = af ? 2*ipr_af_maxbits(af) : 2;
+	}
+
+	funcctx = SRF_PERCALL_SETUP();
+
+	val = funcctx->user_fctx;
+	if (!val)
+		SRF_RETURN_DONE(funcctx);
+	Assert(funcctx->call_cntr < funcctx->max_calls);
+
+	switch (funcctx->max_calls)
+	{
+		case 2:
+			/*
+			 * We're splitting '-' into '0.0.0.0/0' and '::/0'.
+			 */
+			if (funcctx->call_cntr == 0)
+			{
+				res.ip4r.lower = netmask(0);
+				res.ip4r.upper = hostmask(0);
+				af = PGSQL_AF_INET;
+			}
+			else
+			{
+				funcctx->user_fctx = NULL;  /* this is the last row */
+				res.ip6r.lower.bits[0] = netmask6_hi(0);
+				res.ip6r.lower.bits[1] = netmask6_lo(0);
+				res.ip6r.upper.bits[0] = hostmask6_hi(0);
+				res.ip6r.upper.bits[1] = hostmask6_lo(0);
+				af = PGSQL_AF_INET6;
+			}
+			break;
+
+		case 2*ipr_af_maxbits(PGSQL_AF_INET):
+			if (ip4r_split_cidr(&val->ip4r, &res.ip4r))
+				funcctx->user_fctx = NULL;
+			af = PGSQL_AF_INET;
+			break;
+
+		case 2*ipr_af_maxbits(PGSQL_AF_INET6):
+			if (ip6r_split_cidr(&val->ip6r, &res.ip6r))
+				funcctx->user_fctx = NULL;
+			af = PGSQL_AF_INET6;
+			break;
+
+		default:
+			iprange_internal_error();
+	}
+
+	SRF_RETURN_NEXT(funcctx, IPR_PGetDatum(ipr_pack(af, &res)));
+}
+
+/*
+ * comparisons and indexing
+ */
 
 static int
 iprange_cmp_internal(Datum d1, Datum d2)

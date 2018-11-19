@@ -22,3 +22,4 @@ coverage/
 /ip4r.sql.in
 /sql/ip4r-legacy.sql
 /expected/ip4r-legacy.out
+/build*/

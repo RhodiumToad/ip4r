@@ -294,6 +294,16 @@ ipaddr_hash(PG_FUNCTION_ARGS)
     return hash_any((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1));
 }
 
+PG_FUNCTION_INFO_V1(ipaddr_hash_extended);
+Datum
+ipaddr_hash_extended(PG_FUNCTION_ARGS)
+{
+    IP_P arg1 = PG_GETARG_IP_P(0);
+	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
+
+    return hash_any_extended((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1), seed);
+}
+
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_text);
 Datum
 ipaddr_cast_to_text(PG_FUNCTION_ARGS)
@@ -450,6 +460,66 @@ ipaddr_cast_to_ip6(PG_FUNCTION_ARGS)
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP value in cast to IP4")));
     PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ipaddr_cast_from_bit);
+Datum
+ipaddr_cast_from_bit(PG_FUNCTION_ARGS)
+{
+	VarBit *val = PG_GETARG_VARBIT_P(0);
+	IP ip;
+
+	switch (VARBITLEN(val))
+	{
+		case 32:
+			ip.ip4 = DatumGetIP4(DirectFunctionCall1(ip4_cast_from_bit, VarBitPGetDatum(val)));
+			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET, &ip));
+		case 128:
+			ip.ip6 = *(DatumGetIP6P(DirectFunctionCall1(ip6_cast_from_bit, VarBitPGetDatum(val))));
+			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BIT value for conversion to IPADDRESS")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ipaddr_cast_to_bit);
+Datum
+ipaddr_cast_to_bit(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_DATUM(ipaddr_transform_1d(PG_GETARG_DATUM(0), ip4_cast_to_bit, ip6_cast_to_bit));
+}
+
+PG_FUNCTION_INFO_V1(ipaddr_cast_from_bytea);
+Datum
+ipaddr_cast_from_bytea(PG_FUNCTION_ARGS)
+{
+	void *val = PG_GETARG_BYTEA_PP(0);
+	IP ip;
+
+	switch (VARSIZE_ANY_EXHDR(val))
+	{
+		case 4:
+			ip.ip4 = DatumGetIP4(DirectFunctionCall1(ip4_cast_from_bytea, PointerGetDatum(val)));
+			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET, &ip));
+		case 16:
+			ip.ip6 = *(DatumGetIP6P(DirectFunctionCall1(ip6_cast_from_bytea, PointerGetDatum(val))));
+			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BYTEA value for conversion to IPADDRESS")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ipaddr_cast_to_bytea);
+Datum
+ipaddr_cast_to_bytea(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_DATUM(ipaddr_transform_1d(PG_GETARG_DATUM(0), ip4_cast_to_bytea, ip6_cast_to_bytea));
 }
 
 

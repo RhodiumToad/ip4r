@@ -123,6 +123,49 @@ bool ip6_valid_netmask(uint64 maskhi, uint64 masklo)
     return ((uint32)(1U) << (fbit-1)) == d;
 }
 
+static inline
+void ip6_serialize(IP6 *ip, void *dest)
+{
+	unsigned char *p = dest;
+	p[0] = (ip->bits[0] >> 56);
+	p[1] = (ip->bits[0] >> 48);
+	p[2] = (ip->bits[0] >> 40);
+	p[3] = (ip->bits[0] >> 32);
+	p[4] = (ip->bits[0] >> 24);
+	p[5] = (ip->bits[0] >> 16);
+	p[6] = (ip->bits[0] >> 8);
+	p[7] = (ip->bits[0]);
+	p[8] = (ip->bits[1] >> 56);
+	p[9] = (ip->bits[1] >> 48);
+	p[10] = (ip->bits[1] >> 40);
+	p[11] = (ip->bits[1] >> 32);
+	p[12] = (ip->bits[1] >> 24);
+	p[13] = (ip->bits[1] >> 16);
+	p[14] = (ip->bits[1] >> 8);
+	p[15] = (ip->bits[1]);
+}
+
+static inline
+void ip6_deserialize(const void *src, IP6 *ip)
+{
+	const unsigned char *p = src;
+	ip->bits[0] = (((uint64)p[0] << 56)
+				   | ((uint64)p[1] << 48)
+				   | ((uint64)p[2] << 40)
+				   | ((uint64)p[3] << 32)
+				   | ((uint64)p[4] << 24)
+				   | ((uint64)p[5] << 16)
+				   | ((uint64)p[6] << 8)
+				   | p[7]);
+	ip->bits[1] = (((uint64)p[8] << 56)
+				   | ((uint64)p[9] << 48)
+				   | ((uint64)p[10] << 40)
+				   | ((uint64)p[11] << 32)
+				   | ((uint64)p[12] << 24)
+				   | ((uint64)p[13] << 16)
+				   | ((uint64)p[14] << 8)
+				   | p[15]);
+}
 
 static inline
 bool ip6_equal(IP6 *a, IP6 *b)
@@ -201,6 +244,57 @@ bool ip6r_from_inet(IP6 *addr, unsigned masklen, IP6R *ipr)
     ipr->upper.bits[0] = (addr->bits[0] | mask_hi);
     ipr->upper.bits[1] = (addr->bits[1] | mask_lo);
     return true;
+}
+
+static inline
+bool ip6r_split_cidr(IP6R *val, IP6R *res)
+{
+	IP6 lo = val->lower;
+	IP6 hi = val->upper;
+	int len = 128;
+	IP6 mask;
+	IP6 tmp = lo;
+
+	res->lower = lo;
+	res->upper = hi;
+
+	if (masklen6(&lo,&hi) <= 128U)
+		return true;
+
+	/*
+	 * We know that all these cases are impossible because the CIDR check
+	 * would catch them:
+	 *
+	 *  lo==hi
+	 *  lo==0 && hi==~0
+	 *  lo==~0
+	 *
+	 * Therefore this loop must terminate before the mask overflows
+	 */
+	for(;;)
+	{
+		mask.bits[0] = hostmask6_hi(len-1);
+		mask.bits[1] = hostmask6_lo(len-1);
+
+		if ( ((lo.bits[0] & mask.bits[0]) | (lo.bits[1] & mask.bits[1])) != 0 )
+			break;
+
+		tmp.bits[0] |= mask.bits[0];
+		tmp.bits[1] |= mask.bits[1];
+
+		if (ip6_lessthan(&hi, &tmp))
+			break;
+
+		--len;
+	}
+
+	tmp.bits[0] = lo.bits[0] | hostmask6_hi(len);
+	tmp.bits[1] = lo.bits[1] | hostmask6_lo(len);
+
+	res->upper = tmp;
+	ip6_sub_int(&tmp, -1, &val->lower);
+
+	return false;
 }
 
 /* helpers for union/intersection for indexing */

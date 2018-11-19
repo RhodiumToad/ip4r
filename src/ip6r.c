@@ -193,6 +193,16 @@ ip6hash(PG_FUNCTION_ARGS)
     return hash_any((unsigned char *)arg1, sizeof(IP6));
 }
 
+PG_FUNCTION_INFO_V1(ip6_hash_extended);
+Datum
+ip6_hash_extended(PG_FUNCTION_ARGS)
+{
+    IP6 *arg1 = PG_GETARG_IP6_P(0);
+	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
+
+    return hash_any_extended((unsigned char *)arg1, sizeof(IP6), seed);
+}
+
 PG_FUNCTION_INFO_V1(ip6_cast_to_text);
 Datum
 ip6_cast_to_text(PG_FUNCTION_ARGS)
@@ -238,22 +248,7 @@ ip6_cast_from_inet(PG_FUNCTION_ARGS)
     {
         unsigned char *p = in->ipaddr;
         IP6 *ip = palloc(sizeof(IP6));
-        ip->bits[0] = (((uint64)p[0] << 56)
-                       | ((uint64)p[1] << 48)
-                       | ((uint64)p[2] << 40)
-                       | ((uint64)p[3] << 32)
-                       | ((uint64)p[4] << 24)
-                       | ((uint64)p[5] << 16)
-                       | ((uint64)p[6] << 8)
-                       | p[7]);
-        ip->bits[1] = (((uint64)p[8] << 56)
-                       | ((uint64)p[9] << 48)
-                       | ((uint64)p[10] << 40)
-                       | ((uint64)p[11] << 32)
-                       | ((uint64)p[12] << 24)
-                       | ((uint64)p[13] << 16)
-                       | ((uint64)p[14] << 8)
-                       | p[15]);
+		ip6_deserialize(p, ip);
         PG_RETURN_IP6_P(ip);
     }
 
@@ -276,25 +271,7 @@ ip6_cast_to_cidr(PG_FUNCTION_ARGS)
     in = ((inet_struct *)VARDATA(res));
     in->bits = 128;
     in->family = PGSQL_AF_INET6;
-    {
-        unsigned char *p = in->ipaddr;
-        p[0] = (ip->bits[0] >> 56);
-        p[1] = (ip->bits[0] >> 48);
-        p[2] = (ip->bits[0] >> 40);
-        p[3] = (ip->bits[0] >> 32);
-        p[4] = (ip->bits[0] >> 24);
-        p[5] = (ip->bits[0] >> 16);
-        p[6] = (ip->bits[0] >> 8);
-        p[7] = (ip->bits[0]);
-        p[8] = (ip->bits[1] >> 56);
-        p[9] = (ip->bits[1] >> 48);
-        p[10] = (ip->bits[1] >> 40);
-        p[11] = (ip->bits[1] >> 32);
-        p[12] = (ip->bits[1] >> 24);
-        p[13] = (ip->bits[1] >> 16);
-        p[14] = (ip->bits[1] >> 8);
-        p[15] = (ip->bits[1]);
-    }
+	ip6_serialize(ip, in->ipaddr);
 
     PG_RETURN_INET_P(res);
 }
@@ -378,6 +355,77 @@ ip6_cast_from_numeric(PG_FUNCTION_ARGS)
     PG_RETURN_NULL();
 }
 
+PG_FUNCTION_INFO_V1(ip6_cast_from_bit);
+Datum
+ip6_cast_from_bit(PG_FUNCTION_ARGS)
+{
+	VarBit *val = PG_GETARG_VARBIT_P(0);
+
+	if (VARBITLEN(val) == 128)
+	{
+        bits8 *p = VARBITS(val);
+		IP6 *res = palloc(sizeof(IP6));
+		ip6_deserialize(p, res);
+        PG_RETURN_IP6_P(res);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BIT value for conversion to IP6")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip6_cast_to_bit);
+Datum
+ip6_cast_to_bit(PG_FUNCTION_ARGS)
+{
+	IP6 *ip = PG_GETARG_IP6_P(0);
+	int len = VARBITTOTALLEN(128);
+	VarBit *res = palloc0(len);
+	unsigned char *p = VARBITS(res);
+
+	SET_VARSIZE(res, len);
+	VARBITLEN(res) = 128;
+
+	ip6_serialize(ip, p);
+
+	PG_RETURN_VARBIT_P(res);
+}
+
+PG_FUNCTION_INFO_V1(ip6_cast_from_bytea);
+Datum
+ip6_cast_from_bytea(PG_FUNCTION_ARGS)
+{
+	void *val = PG_GETARG_BYTEA_PP(0);
+
+	if (VARSIZE_ANY_EXHDR(val) == 16)
+	{
+        void *p = VARDATA_ANY(val);
+		IP6 *res = palloc(sizeof(IP6));
+		ip6_deserialize(p, res);
+        PG_RETURN_IP6_P(res);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BYTEA value for conversion to IP4")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip6_cast_to_bytea);
+Datum
+ip6_cast_to_bytea(PG_FUNCTION_ARGS)
+{
+	IP6 *ip = PG_GETARG_IP6_P(0);
+	bytea *res = palloc(VARHDRSZ + 16);
+	unsigned char *p = (unsigned char *) VARDATA(res);
+
+	SET_VARSIZE(res, VARHDRSZ + 16);
+
+	ip6_serialize(ip, p);
+
+	PG_RETURN_BYTEA_P(res);
+}
 
 PG_FUNCTION_INFO_V1(ip6_netmask);
 Datum
@@ -740,6 +788,16 @@ ip6rhash(PG_FUNCTION_ARGS)
     return hash_any((unsigned char *)arg1, sizeof(IP6R));
 }
 
+PG_FUNCTION_INFO_V1(ip6r_hash_extended);
+Datum
+ip6r_hash_extended(PG_FUNCTION_ARGS)
+{
+    IP6R *arg1 = PG_GETARG_IP6R_P(0);
+	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
+
+    return hash_any_extended((unsigned char *)arg1, sizeof(IP6R), seed);
+}
+
 PG_FUNCTION_INFO_V1(ip6r_cast_to_text);
 Datum
 ip6r_cast_to_text(PG_FUNCTION_ARGS)
@@ -790,22 +848,7 @@ ip6r_cast_from_cidr(PG_FUNCTION_ARGS)
         unsigned char *p = in->ipaddr;
         IP6 ip;
         IP6R ipr;
-        ip.bits[0] = (((uint64)p[0] << 56)
-                      | ((uint64)p[1] << 48)
-                      | ((uint64)p[2] << 40)
-                      | ((uint64)p[3] << 32)
-                      | ((uint64)p[4] << 24)
-                      | ((uint64)p[5] << 16)
-                      | ((uint64)p[6] << 8)
-                      | p[7]);
-        ip.bits[1] = (((uint64)p[8] << 56)
-                      | ((uint64)p[9] << 48)
-                      | ((uint64)p[10] << 40)
-                      | ((uint64)p[11] << 32)
-                      | ((uint64)p[12] << 24)
-                      | ((uint64)p[13] << 16)
-                      | ((uint64)p[14] << 8)
-                      | p[15]);
+		ip6_deserialize(p, &ip);
         if (ip6r_from_cidr(&ip, in->bits, &ipr))
         {
             IP6R *res = palloc(sizeof(IP6R));
@@ -839,25 +882,7 @@ ip6r_cast_to_cidr(PG_FUNCTION_ARGS)
     in = ((inet_struct *)VARDATA(res));
     in->bits = bits;
     in->family = PGSQL_AF_INET6;
-    {
-        unsigned char *p = in->ipaddr;
-        p[0] = (ip->bits[0] >> 56);
-        p[1] = (ip->bits[0] >> 48);
-        p[2] = (ip->bits[0] >> 40);
-        p[3] = (ip->bits[0] >> 32);
-        p[4] = (ip->bits[0] >> 24);
-        p[5] = (ip->bits[0] >> 16);
-        p[6] = (ip->bits[0] >> 8);
-        p[7] = (ip->bits[0]);
-        p[8] = (ip->bits[1] >> 56);
-        p[9] = (ip->bits[1] >> 48);
-        p[10] = (ip->bits[1] >> 40);
-        p[11] = (ip->bits[1] >> 32);
-        p[12] = (ip->bits[1] >> 24);
-        p[13] = (ip->bits[1] >> 16);
-        p[14] = (ip->bits[1] >> 8);
-        p[15] = (ip->bits[1]);
-    }
+	ip6_serialize(ip, in->ipaddr);
 
     PG_RETURN_INET_P(res);
 }
@@ -892,6 +917,63 @@ ip6r_from_ip6s(PG_FUNCTION_ARGS)
     else
         res->lower = *b, res->upper = *a;
     PG_RETURN_IP6R_P(res);
+}
+
+PG_FUNCTION_INFO_V1(ip6r_cast_from_bit);
+Datum
+ip6r_cast_from_bit(PG_FUNCTION_ARGS)
+{
+	VarBit *val = PG_GETARG_VARBIT_P(0);
+	int bitlen = VARBITLEN(val);
+
+	if (bitlen <= 128)
+	{
+		bits8 buf[16];
+        bits8 *p = VARBITS(val);
+		IP6 ip;
+		IP6R *res = palloc(sizeof(IP6R));
+
+		if (bitlen <= 120)
+		{
+			memset(buf, 0, sizeof(buf));
+			memcpy(buf, p, VARBITBYTES(val));
+			p = buf;
+		}
+
+		ip6_deserialize(p, &ip);
+		if (ip6r_from_cidr(&ip, bitlen, res))
+			PG_RETURN_IP6_P(res);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BIT value for conversion to IP6R")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip6r_cast_to_bit);
+Datum
+ip6r_cast_to_bit(PG_FUNCTION_ARGS)
+{
+    IP6R *ipr = PG_GETARG_IP6R_P(0);
+    IP6 *ip = &ipr->lower;
+    unsigned bits = masklen6(ip, &ipr->upper);
+	VarBit *res;
+	unsigned char buf[16];
+	int len;
+
+    if (bits > 128)
+        PG_RETURN_NULL();
+
+	len = VARBITTOTALLEN(bits);
+    res = palloc0(len);
+    SET_VARSIZE(res, len);
+	VARBITLEN(res) = bits;
+
+	ip6_serialize(ip, buf);
+
+	memcpy(VARBITS(res), buf, VARBITBYTES(res));
+	PG_RETURN_VARBIT_P(res);
 }
 
 PG_FUNCTION_INFO_V1(ip6r_net_prefix);
@@ -969,6 +1051,44 @@ ip6r_is_cidr(PG_FUNCTION_ARGS)
     IP6R *ipr = PG_GETARG_IP6R_P(0);
     PG_RETURN_BOOL( (masklen6(&ipr->lower,&ipr->upper) <= 128U) );
 }
+
+/*
+ * Decompose an arbitrary range into CIDRs
+ */
+
+PG_FUNCTION_INFO_V1(ip6r_cidr_split);
+Datum
+ip6r_cidr_split(PG_FUNCTION_ARGS)
+{
+	FuncCallContext *funcctx;
+	IP6R *val;
+	IP6R *res;
+
+	if (SRF_IS_FIRSTCALL())
+	{
+		IP6R *in = PG_GETARG_IP6R_P(0);
+		funcctx = SRF_FIRSTCALL_INIT();
+		val = MemoryContextAlloc(funcctx->multi_call_memory_ctx,
+								 sizeof(IP6R));
+		*val = *in;
+		funcctx->user_fctx = val;
+	}
+
+	funcctx = SRF_PERCALL_SETUP();
+	val = funcctx->user_fctx;
+	if (!val)
+		SRF_RETURN_DONE(funcctx);
+
+	res = palloc(sizeof(IP6R));
+	if (ip6r_split_cidr(val, res))
+		funcctx->user_fctx = NULL;
+
+	SRF_RETURN_NEXT(funcctx, IP6RPGetDatum(res));
+}
+
+/*
+ * comparisons and indexing
+ */
 
 PG_FUNCTION_INFO_V1(ip6_lt);
 Datum

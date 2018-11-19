@@ -178,6 +178,16 @@ ip4hash(PG_FUNCTION_ARGS)
     return hash_any((unsigned char *)&arg1, sizeof(IP4));
 }
 
+PG_FUNCTION_INFO_V1(ip4_hash_extended);
+Datum
+ip4_hash_extended(PG_FUNCTION_ARGS)
+{
+    IP4 arg1 = PG_GETARG_IP4(0);
+	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
+
+    return hash_any_extended((unsigned char *)&arg1, sizeof(IP4), seed);
+}
+
 PG_FUNCTION_INFO_V1(ip4_cast_to_text);
 Datum
 ip4_cast_to_text(PG_FUNCTION_ARGS)
@@ -338,6 +348,82 @@ ip4_cast_from_numeric(PG_FUNCTION_ARGS)
                  errmsg("ip address out of range")));
 
     PG_RETURN_IP4((unsigned long) val);
+}
+
+PG_FUNCTION_INFO_V1(ip4_cast_from_bit);
+Datum
+ip4_cast_from_bit(PG_FUNCTION_ARGS)
+{
+	VarBit *val = PG_GETARG_VARBIT_P(0);
+
+	if (val->bit_len == 32)
+	{
+        bits8 *p = VARBITS(val);
+        IP4 ip = (p[0] << 24)|(p[1] << 16)|(p[2] << 8)|p[3];
+        PG_RETURN_IP4(ip);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BIT value for conversion to IP4")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip4_cast_to_bit);
+Datum
+ip4_cast_to_bit(PG_FUNCTION_ARGS)
+{
+	IP4 ip = PG_GETARG_IP4(0);
+	int len = VARBITTOTALLEN(32);
+	VarBit *res = palloc0(len);
+	unsigned char *p = VARBITS(res);
+
+	SET_VARSIZE(res, len);
+	VARBITLEN(res) = 32;
+
+	p[0] = (ip >> 24) & 0xff;
+	p[1] = (ip >> 16) & 0xff;
+	p[2] = (ip >>  8) & 0xff;
+	p[3] = (ip      ) & 0xff;
+
+	PG_RETURN_VARBIT_P(res);
+}
+
+PG_FUNCTION_INFO_V1(ip4_cast_from_bytea);
+Datum
+ip4_cast_from_bytea(PG_FUNCTION_ARGS)
+{
+	void *val = PG_GETARG_BYTEA_PP(0);
+
+	if (VARSIZE_ANY_EXHDR(val) == 4)
+	{
+        unsigned char *p = (unsigned char *) VARDATA_ANY(val);
+        IP4 ip = (p[0] << 24)|(p[1] << 16)|(p[2] << 8)|p[3];
+        PG_RETURN_IP4(ip);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BYTEA value for conversion to IP4")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip4_cast_to_bytea);
+Datum
+ip4_cast_to_bytea(PG_FUNCTION_ARGS)
+{
+	IP4 ip = PG_GETARG_IP4(0);
+	bytea *res = palloc(VARHDRSZ + 4);
+	unsigned char *p = (unsigned char *) VARDATA(res);
+
+	SET_VARSIZE(res, VARHDRSZ + 4);
+
+	p[0] = (ip >> 24) & 0xff;
+	p[1] = (ip >> 16) & 0xff;
+	p[2] = (ip >>  8) & 0xff;
+	p[3] = (ip      ) & 0xff;
+
+	PG_RETURN_BYTEA_P(res);
 }
 
 PG_FUNCTION_INFO_V1(ip4_netmask);
@@ -621,6 +707,16 @@ ip4rhash(PG_FUNCTION_ARGS)
     return hash_any((unsigned char *)arg1, sizeof(IP4R));
 }
 
+PG_FUNCTION_INFO_V1(ip4r_hash_extended);
+Datum
+ip4r_hash_extended(PG_FUNCTION_ARGS)
+{
+    IP4R *arg1 = PG_GETARG_IP4R_P(0);
+	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
+
+    return hash_any_extended((unsigned char *)arg1, sizeof(IP4R), seed);
+}
+
 PG_FUNCTION_INFO_V1(ip4r_cast_to_text);
 Datum
 ip4r_cast_to_text(PG_FUNCTION_ARGS)
@@ -747,6 +843,67 @@ ip4r_from_ip4s(PG_FUNCTION_ARGS)
     PG_RETURN_IP4R_P( res );
 }
 
+PG_FUNCTION_INFO_V1(ip4r_cast_from_bit);
+Datum
+ip4r_cast_from_bit(PG_FUNCTION_ARGS)
+{
+	VarBit *val = PG_GETARG_VARBIT_P(0);
+	int bitlen = VARBITLEN(val);
+
+	if (bitlen <= 32)
+	{
+		bits8 buf[4];
+        bits8 *p = VARBITS(val);
+		IP4 ip;
+		IP4R *res = palloc(sizeof(IP4R));
+
+		if (bitlen <= 24)
+		{
+			memset(buf, 0, sizeof(buf));
+			memcpy(buf, p, VARBITBYTES(val));
+			p = buf;
+		}
+
+        ip = (p[0] << 24)|(p[1] << 16)|(p[2] << 8)|p[3];
+
+		if (ip4r_from_cidr(ip, bitlen, res))
+			PG_RETURN_IP4R_P(res);
+	}
+
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("invalid BIT value for conversion to IP4R")));
+    PG_RETURN_NULL();
+}
+
+PG_FUNCTION_INFO_V1(ip4r_cast_to_bit);
+Datum
+ip4r_cast_to_bit(PG_FUNCTION_ARGS)
+{
+    IP4R *ipr = PG_GETARG_IP4R_P(0);
+    IP4 ip = ipr->lower;
+    unsigned bits = masklen(ip, ipr->upper);
+	VarBit *res;
+	unsigned char buf[4];
+	int len;
+
+    if (bits > 32)
+        PG_RETURN_NULL();
+
+	len = VARBITTOTALLEN(bits);
+    res = palloc0(len);
+    SET_VARSIZE(res, len);
+	VARBITLEN(res) = bits;
+
+	buf[0] = (ip >> 24) & 0xff;
+	buf[1] = (ip >> 16) & 0xff;
+	buf[2] = (ip >>  8) & 0xff;
+	buf[3] = (ip      ) & 0xff;
+
+	memcpy(VARBITS(res), buf, VARBITBYTES(res));
+	PG_RETURN_VARBIT_P(res);
+}
+
 PG_FUNCTION_INFO_V1(ip4r_net_prefix);
 Datum
 ip4r_net_prefix(PG_FUNCTION_ARGS)
@@ -796,7 +953,6 @@ ip4r_net_mask(PG_FUNCTION_ARGS)
     }
 }
 
-
 PG_FUNCTION_INFO_V1(ip4r_lower);
 Datum
 ip4r_lower(PG_FUNCTION_ARGS)
@@ -820,6 +976,44 @@ ip4r_is_cidr(PG_FUNCTION_ARGS)
     IP4R *ipr = PG_GETARG_IP4R_P(0);
     PG_RETURN_BOOL( (masklen(ipr->lower,ipr->upper) <= 32U) );
 }
+
+/*
+ * Decompose an arbitrary range into CIDRs
+ */
+
+PG_FUNCTION_INFO_V1(ip4r_cidr_split);
+Datum
+ip4r_cidr_split(PG_FUNCTION_ARGS)
+{
+	FuncCallContext *funcctx;
+	IP4R *val;
+	IP4R *res;
+
+	if (SRF_IS_FIRSTCALL())
+	{
+		IP4R *in = PG_GETARG_IP4R_P(0);
+		funcctx = SRF_FIRSTCALL_INIT();
+		val = MemoryContextAlloc(funcctx->multi_call_memory_ctx,
+								 sizeof(IP4R));
+		*val = *in;
+		funcctx->user_fctx = val;
+	}
+
+	funcctx = SRF_PERCALL_SETUP();
+	val = funcctx->user_fctx;
+	if (!val)
+		SRF_RETURN_DONE(funcctx);
+
+	res = palloc(sizeof(IP4R));
+	if (ip4r_split_cidr(val, res))
+		funcctx->user_fctx = NULL;
+
+	SRF_RETURN_NEXT(funcctx, IP4RPGetDatum(res));
+}
+
+/*
+ * comparisons and indexing
+ */
 
 PG_FUNCTION_INFO_V1(ip4_lt);
 Datum

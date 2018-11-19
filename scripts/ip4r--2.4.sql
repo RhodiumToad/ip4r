@@ -106,26 +106,37 @@ CREATE FUNCTION ip4(double precision) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast
 CREATE FUNCTION ip4(numeric) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_numeric' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4(inet) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_inet' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4(text) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_text' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip4(bit) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip4(varbit) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip4(bytea) RETURNS ip4 AS 'MODULE_PATHNAME','ip4_cast_from_bytea' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4(ipaddress) RETURNS ip4 AS 'MODULE_PATHNAME','ipaddr_cast_to_ip4' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION ip6(numeric) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_numeric' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6(inet) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_inet' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6(text) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_text' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6(bit) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6(varbit) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6(bytea) RETURNS ip6 AS 'MODULE_PATHNAME','ip6_cast_from_bytea' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6(ipaddress) RETURNS ip6 AS 'MODULE_PATHNAME','ipaddr_cast_to_ip6' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION ipaddress(inet) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_inet' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ipaddress(ip4) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_ip4' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ipaddress(ip6) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_ip6' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ipaddress(text) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_text' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ipaddress(bit) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ipaddress(varbit) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ipaddress(bytea) RETURNS ipaddress AS 'MODULE_PATHNAME','ipaddr_cast_from_bytea' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION ip4r(cidr) RETURNS ip4r AS 'MODULE_PATHNAME','ip4r_cast_from_cidr' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4r(ip4) RETURNS ip4r AS 'MODULE_PATHNAME','ip4r_cast_from_ip4' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4r(text) RETURNS ip4r AS 'MODULE_PATHNAME','ip4r_cast_from_text' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip4r(varbit) RETURNS ip4r AS 'MODULE_PATHNAME','ip4r_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip4r(iprange) RETURNS ip4r AS 'MODULE_PATHNAME','iprange_cast_to_ip4r' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION ip6r(cidr) RETURNS ip6r AS 'MODULE_PATHNAME','ip6r_cast_from_cidr' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6r(ip6) RETURNS ip6r AS 'MODULE_PATHNAME','ip6r_cast_from_ip6' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6r(text) RETURNS ip6r AS 'MODULE_PATHNAME','ip6r_cast_from_text' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6r(varbit) RETURNS ip6r AS 'MODULE_PATHNAME','ip6r_cast_from_bit' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6r(iprange) RETURNS ip6r AS 'MODULE_PATHNAME','iprange_cast_to_ip6r' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION iprange(cidr) RETURNS iprange AS 'MODULE_PATHNAME','iprange_cast_from_cidr' LANGUAGE C IMMUTABLE STRICT;
@@ -158,6 +169,15 @@ CREATE FUNCTION to_double(ip4) RETURNS double precision AS 'MODULE_PATHNAME','ip
 CREATE FUNCTION to_numeric(ip4) RETURNS numeric AS 'MODULE_PATHNAME','ip4_cast_to_numeric' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION to_numeric(ip6) RETURNS numeric AS 'MODULE_PATHNAME','ip6_cast_to_numeric' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION to_numeric(ipaddress) RETURNS numeric AS 'MODULE_PATHNAME','ipaddr_cast_to_numeric' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(ip4) RETURNS varbit AS 'MODULE_PATHNAME','ip4_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(ip6) RETURNS varbit AS 'MODULE_PATHNAME','ip6_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(ipaddress) RETURNS varbit AS 'MODULE_PATHNAME','ipaddr_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(ip4r) RETURNS varbit AS 'MODULE_PATHNAME','ip4r_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(ip6r) RETURNS varbit AS 'MODULE_PATHNAME','ip6r_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bit(iprange) RETURNS varbit AS 'MODULE_PATHNAME','iprange_cast_to_bit' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bytea(ip4) RETURNS bytea AS 'MODULE_PATHNAME','ip4_cast_to_bytea' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bytea(ip6) RETURNS bytea AS 'MODULE_PATHNAME','ip6_cast_to_bytea' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION to_bytea(ipaddress) RETURNS bytea AS 'MODULE_PATHNAME','ipaddr_cast_to_bytea' LANGUAGE C IMMUTABLE STRICT;
 
 -- ----------------------------------------------------------------------
 -- Cast definitions (outward)
@@ -169,27 +189,36 @@ CREATE FUNCTION to_numeric(ipaddress) RETURNS numeric AS 'MODULE_PATHNAME','ipad
 CREATE CAST (ip4 as bigint) WITH FUNCTION to_bigint(ip4);
 CREATE CAST (ip4 as double precision) WITH FUNCTION to_double(ip4);
 CREATE CAST (ip4 as numeric) WITH FUNCTION to_numeric(ip4);
+CREATE CAST (ip4 as varbit) WITH FUNCTION to_bit(ip4);
+CREATE CAST (ip4 as bytea) WITH FUNCTION to_bytea(ip4);
 CREATE CAST (ip4 as text) WITH FUNCTION text(ip4);
 
 CREATE CAST (ip4 as cidr) WITH FUNCTION cidr(ip4) AS ASSIGNMENT;
 
 CREATE CAST (ip4r as cidr) WITH FUNCTION cidr(ip4r);
+CREATE CAST (ip4r as varbit) WITH FUNCTION to_bit(ip4r);
 CREATE CAST (ip4r as text) WITH FUNCTION text(ip4r);
 
 CREATE CAST (ip6 as numeric) WITH FUNCTION to_numeric(ip6);
+CREATE CAST (ip6 as varbit) WITH FUNCTION to_bit(ip6);
+CREATE CAST (ip6 as bytea) WITH FUNCTION to_bytea(ip6);
 CREATE CAST (ip6 as text) WITH FUNCTION text(ip6);
 
 CREATE CAST (ip6 as cidr) WITH FUNCTION cidr(ip6) AS ASSIGNMENT;
 
 CREATE CAST (ip6r as cidr) WITH FUNCTION cidr(ip6r);
+CREATE CAST (ip6r as varbit) WITH FUNCTION to_bit(ip6r);
 CREATE CAST (ip6r as text) WITH FUNCTION text(ip6r);
 
 CREATE CAST (ipaddress as numeric) WITH FUNCTION to_numeric(ipaddress);
+CREATE CAST (ipaddress as varbit) WITH FUNCTION to_bit(ipaddress);
+CREATE CAST (ipaddress as bytea) WITH FUNCTION to_bytea(ipaddress);
 CREATE CAST (ipaddress as text) WITH FUNCTION text(ipaddress);
 
 CREATE CAST (ipaddress as cidr) WITH FUNCTION cidr(ipaddress) AS ASSIGNMENT;
 
 CREATE CAST (iprange as cidr) WITH FUNCTION cidr(iprange);
+CREATE CAST (iprange as varbit) WITH FUNCTION to_bit(iprange);
 CREATE CAST (iprange as text) WITH FUNCTION text(iprange);
 
 -- ----------------------------------------------------------------------
@@ -211,6 +240,20 @@ CREATE CAST (double precision as ip4) WITH FUNCTION ip4(double precision);
 
 CREATE CAST (numeric as ip4) WITH FUNCTION ip4(numeric);
 CREATE CAST (numeric as ip6) WITH FUNCTION ip6(numeric);
+
+CREATE CAST (bit as ip4) WITH FUNCTION ip4(bit);
+CREATE CAST (bit as ip6) WITH FUNCTION ip6(bit);
+CREATE CAST (bit as ipaddress) WITH FUNCTION ipaddress(bit);
+
+CREATE CAST (varbit as ip4) WITH FUNCTION ip4(bit);
+CREATE CAST (varbit as ip6) WITH FUNCTION ip6(bit);
+CREATE CAST (varbit as ipaddress) WITH FUNCTION ipaddress(varbit);
+CREATE CAST (varbit as ip4r) WITH FUNCTION ip4r(varbit);
+CREATE CAST (varbit as ip6r) WITH FUNCTION ip6r(varbit);
+
+CREATE CAST (bytea as ip4) WITH FUNCTION ip4(bytea);
+CREATE CAST (bytea as ip6) WITH FUNCTION ip6(bytea);
+CREATE CAST (bytea as ipaddress) WITH FUNCTION ipaddress(bytea);
 
 CREATE CAST (cidr as ip4r) WITH FUNCTION ip4r(cidr) AS ASSIGNMENT;
 CREATE CAST (cidr as ip6r) WITH FUNCTION ip6r(cidr) AS ASSIGNMENT;
@@ -297,6 +340,10 @@ CREATE FUNCTION iprange_union(iprange, iprange) RETURNS iprange AS 'MODULE_PATHN
 CREATE FUNCTION ip4r_inter(ip4r,ip4r) RETURNS ip4r AS 'MODULE_PATHNAME','ip4r_inter' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6r_inter(ip6r,ip6r) RETURNS ip6r AS 'MODULE_PATHNAME','ip6r_inter' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION iprange_inter(iprange,iprange) RETURNS iprange AS 'MODULE_PATHNAME','iprange_inter' LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION cidr_split(ip4r) RETURNS SETOF ip4r AS 'MODULE_PATHNAME','ip4r_cidr_split' LANGUAGE C IMMUTABLE STRICT ROWS 10;
+CREATE FUNCTION cidr_split(ip6r) RETURNS SETOF ip6r AS 'MODULE_PATHNAME','ip6r_cidr_split' LANGUAGE C IMMUTABLE STRICT ROWS 50;
+CREATE FUNCTION cidr_split(iprange) RETURNS SETOF iprange AS 'MODULE_PATHNAME','iprange_cidr_split' LANGUAGE C IMMUTABLE STRICT ROWS 30;
 
 -- ----------------------------------------------------------------------
 -- Functions with operator equivalents
@@ -658,6 +705,15 @@ CREATE FUNCTION ipaddresshash(ipaddress) RETURNS integer AS 'MODULE_PATHNAME', '
 CREATE FUNCTION ip4rhash(ip4r) RETURNS integer AS 'MODULE_PATHNAME', 'ip4rhash' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION ip6rhash(ip6r) RETURNS integer AS 'MODULE_PATHNAME', 'ip6rhash' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION iprangehash(iprange) RETURNS integer AS 'MODULE_PATHNAME', 'iprange_hash' LANGUAGE C IMMUTABLE STRICT;
+COMMENT ON FUNCTION iprangehash(iprange) IS 'deprecated, obsolete';
+CREATE FUNCTION iprange_hash(iprange) RETURNS integer AS 'MODULE_PATHNAME', 'iprange_hash_new' LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION ip4_hash_extended(ip4,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ip4_hash_extended' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6_hash_extended(ip6,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ip6_hash_extended' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ipaddress_hash_extended(ipaddress,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ipaddr_hash_extended' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip4r_hash_extended(ip4r,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ip4r_hash_extended' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION ip6r_hash_extended(ip6r,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ip6r_hash_extended' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION iprange_hash_extended(iprange,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'iprange_hash_extended' LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR CLASS hash_ip4_ops DEFAULT FOR TYPE ip4 USING hash AS
        OPERATOR	1	= ,
@@ -681,7 +737,7 @@ CREATE OPERATOR CLASS hash_ipaddress_ops DEFAULT FOR TYPE ipaddress USING hash A
 
 CREATE OPERATOR CLASS hash_iprange_ops DEFAULT FOR TYPE iprange USING hash AS
        OPERATOR	1	= ,
-       FUNCTION	1	iprangehash(iprange);
+       FUNCTION	1	iprange_hash(iprange);
 
 -- ----------------------------------------------------------------------
 -- GiST
@@ -693,7 +749,7 @@ CREATE FUNCTION gip4r_penalty(internal,internal,internal) RETURNS internal AS 'M
 CREATE FUNCTION gip4r_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_union(internal, internal) RETURNS ip4r AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip4r_same(ip4r, ip4r, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
-CREATE FUNCTION gip4r_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip4r_fetch(internal) RETURNS internal	AS 'MODULE_PATHNAME' LANGUAGE C;
 
 CREATE FUNCTION gip6r_consistent(internal,ip6r,int2,oid,internal) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_compress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
@@ -702,7 +758,7 @@ CREATE FUNCTION gip6r_penalty(internal,internal,internal) RETURNS internal AS 'M
 CREATE FUNCTION gip6r_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_union(internal, internal) RETURNS ip6r AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gip6r_same(ip6r, ip6r, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
-CREATE FUNCTION gip6r_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gip6r_fetch(internal) RETURNS internal	AS 'MODULE_PATHNAME' LANGUAGE C;
 
 CREATE FUNCTION gipr_consistent(internal,iprange,int2,oid,internal) RETURNS bool AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_compress(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
@@ -710,7 +766,7 @@ CREATE FUNCTION gipr_decompress(internal) RETURNS internal  AS 'MODULE_PATHNAME'
 CREATE FUNCTION gipr_penalty(internal,internal,internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C STRICT;
 CREATE FUNCTION gipr_picksplit(internal, internal) RETURNS internal AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_union(internal, internal) RETURNS iprange AS 'MODULE_PATHNAME' LANGUAGE C;
-CREATE FUNCTION gipr_same(iprange, iprange, internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
+CREATE FUNCTION gipr_same(iprange, iprange, internal) RETURNS internal	AS 'MODULE_PATHNAME' LANGUAGE C;
 CREATE FUNCTION gipr_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANGUAGE C;
 
 CREATE OPERATOR CLASS gist_ip4r_ops DEFAULT FOR TYPE ip4r USING gist AS
@@ -759,31 +815,43 @@ CREATE OPERATOR CLASS gist_iprange_ops DEFAULT FOR TYPE iprange USING gist AS
        FUNCTION	7	gipr_same (iprange, iprange, internal);
 
 DO $s$
+  DECLARE
+    pg_ver integer := current_setting('server_version_num')::integer;
+    r record;
   BEGIN
-    IF current_setting('server_version_num')::integer >= 90500 THEN
+    IF pg_ver >= 90500 THEN
       ALTER OPERATOR FAMILY gist_ip4r_ops USING gist ADD
-             FUNCTION	9  (ip4r,ip4r)	gip4r_fetch (internal);
+	     FUNCTION	9  (ip4r,ip4r)	gip4r_fetch (internal);
       ALTER OPERATOR FAMILY gist_ip6r_ops USING gist ADD
-             FUNCTION	9  (ip6r,ip6r)	gip6r_fetch (internal);
+	     FUNCTION	9  (ip6r,ip6r)	gip6r_fetch (internal);
       ALTER OPERATOR FAMILY gist_iprange_ops USING gist ADD
-             FUNCTION	9  (iprange,iprange)	gipr_fetch (internal);
+	     FUNCTION	9  (iprange,iprange)	gipr_fetch (internal);
     END IF;
-    IF current_setting('server_version_num')::integer >= 90600 THEN
-      DECLARE
-        r record;
-      BEGIN
-        FOR r IN SELECT oid::regprocedure as fsig
-                   FROM pg_catalog.pg_proc
-                  WHERE (probin = 'MODULE_PATHNAME'
-                         AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
-                     OR (oid in ('family(ip4)'::regprocedure,
-                                 'family(ip6)'::regprocedure,
-                                 'family(ip4r)'::regprocedure,
-                                 'family(ip6r)'::regprocedure))
-        LOOP
-          EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
-        END LOOP;
-      END;
+    IF pg_ver >= 90600 THEN
+      FOR r IN SELECT oid::regprocedure as fsig
+		 FROM pg_catalog.pg_proc
+		WHERE (probin = 'MODULE_PATHNAME'
+		       AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
+		   OR (oid in ('family(ip4)'::regprocedure,
+			       'family(ip6)'::regprocedure,
+			       'family(ip4r)'::regprocedure,
+			       'family(ip6r)'::regprocedure))
+      LOOP
+	EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
+      END LOOP;
+    END IF;
+    IF pg_ver >= 110000 THEN
+      FOR r IN SELECT tname
+		 FROM UNNEST(ARRAY['ip4','ip4r',
+				   'ip6','ip6r',
+				   'ipaddress','iprange']) u(tname)
+      LOOP
+	EXECUTE format('ALTER OPERATOR FAMILY %I USING hash'
+		       '  ADD FUNCTION 2 %I(%I,bigint)',
+		       format('hash_%s_ops', r.tname),
+		       format('%s_hash_extended', r.tname),
+		       r.tname);
+      END LOOP;
     END IF;
   END;
 $s$;
