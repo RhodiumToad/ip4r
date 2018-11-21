@@ -216,6 +216,65 @@ void ip6_sub_int(IP6 *minuend, int subtrahend, IP6 *result)
 	result->bits[1] = res_lo;
 }
 
+static inline
+bool ip6_in_range_internal(IP6 *val, IP6 *base, IP6 *offset, bool sub, bool less)
+{
+	IP6 diff;
+
+	/*
+	 * offset cannot be negative here since IP6 is unsigned
+	 *
+	 * val CMP (base OP offset) is equivalent to:
+	 * (val - base) CMP (offset)  when OP=+,
+	 *   note that if (base > val) then
+	 *     (val - base) <= offset  is known true,
+	 *     (val - base) >= offset  is known false,
+	 * (offset) CMP (base - val)  when OP=-,
+	 *   note that if (val > base) then
+	 *     offset >= (base - val)  is known true,
+	 *     offset <= (base - val)  is known false,
+	 * so we can choose to do all of these tests in a way that
+	 * avoids underflow of val - base.
+	 */
+	if (sub)
+	{
+		if (ip6_lessthan(base, val))
+			return !less;
+		ip6_sub(base, val, &diff);
+		less = !less;
+	}
+	else
+	{
+		if (ip6_lessthan(val, base))
+			return less;
+		ip6_sub(val, base, &diff);
+	}
+	if (less)
+		return !ip6_lessthan(offset,&diff);
+	else
+		return !ip6_lessthan(&diff,offset);
+}
+
+static inline
+bool ip6_in_range_internal_bits(IP6 *val, IP6 *base, int bits, bool sub, bool less)
+{
+	IP6 newbase = *base;
+	if (sub)
+	{
+		newbase.bits[0] &= netmask6_hi(bits);
+		newbase.bits[1] &= netmask6_lo(bits);
+	}
+	else
+	{
+		newbase.bits[0] |= hostmask6_hi(bits);
+		newbase.bits[1] |= hostmask6_lo(bits);
+	}
+	if (less)
+		return !ip6_lessthan(&newbase,val); /* val <= newbase */
+	else
+		return !ip6_lessthan(val,&newbase); /* val >= newbase */
+}
+
 
 static inline
 bool ip6r_from_cidr(IP6 *prefix, unsigned masklen, IP6R *ipr)

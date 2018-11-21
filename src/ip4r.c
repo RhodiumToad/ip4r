@@ -1252,6 +1252,83 @@ ip4_cmp(PG_FUNCTION_ARGS)
     PG_RETURN_INT32(1);
 }
 
+/*
+ * in_range(val ip4,base ip4,offset bigint,sub bool,less bool)
+ * returns val CMP (base OP offset)
+ * where CMP is <= if less, >= otherwise
+ *   and OP is - if sub, + otherwise
+ * We treat negative values of offset as special: they indicate
+ * the (negation of) a cidr prefix length
+ */
+PG_FUNCTION_INFO_V1(ip4_in_range_bigint);
+Datum
+ip4_in_range_bigint(PG_FUNCTION_ARGS)
+{
+	IP4 val = PG_GETARG_IP4(0);
+	IP4 base = PG_GETARG_IP4(1);
+	int64 offset = PG_GETARG_INT64(2);
+	bool sub = PG_GETARG_BOOL(3);
+	bool less = PG_GETARG_BOOL(4);
+
+	if (offset >= INT64CONST(0x100000000) || offset < -32)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE),
+				 errmsg("invalid preceding or following size in window function"),
+				 errdetail("Offset value " INT64_FORMAT " is outside the range -32 to 4294967295", offset)));
+
+	if (offset < 0)
+	{
+		int bits = -offset;
+		if (sub)
+			base &= netmask(bits);
+		else
+			base |= hostmask(bits);
+		if (less)
+			PG_RETURN_BOOL(val <= base);
+		else
+			PG_RETURN_BOOL(val >= base);
+	}
+	else
+	{
+		/*
+		 * val CMP (base OP offset) is equivalent to
+		 * val - base CMP (OP offset), which avoids overflow.
+		 */
+		int64 delta = (int64)val - (int64)base;
+		if (sub)
+			offset = -offset;
+		if (less)
+			PG_RETURN_BOOL(delta <= offset);
+		else
+			PG_RETURN_BOOL(delta >= offset);
+	}
+}
+
+PG_FUNCTION_INFO_V1(ip4_in_range_ip4);
+Datum
+ip4_in_range_ip4(PG_FUNCTION_ARGS)
+{
+	IP4 val = PG_GETARG_IP4(0);
+	IP4 base = PG_GETARG_IP4(1);
+	IP4 offset = PG_GETARG_IP4(2);
+	bool sub = PG_GETARG_BOOL(3);
+	bool less = PG_GETARG_BOOL(4);
+
+	/*
+	 * val CMP (base OP offset) is equivalent to
+	 * val - base CMP (OP offset), which avoids overflow.
+	 */
+	int64 delta = (int64)val - (int64)base;
+	int64 offs = (int64)offset;
+	if (sub)
+		offs = -offs;
+	if (less)
+		PG_RETURN_BOOL(delta <= offs);
+	else
+		PG_RETURN_BOOL(delta >= offs);
+}
+
+
 /*****************************************************************************
  *                                                 GiST functions
  *****************************************************************************/

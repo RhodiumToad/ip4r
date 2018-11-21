@@ -1312,6 +1312,126 @@ ip6_cmp(PG_FUNCTION_ARGS)
     PG_RETURN_INT32(ip6_compare(a,b));
 }
 
+/*
+ * in_range(val ip6,base ip6,offset bigint,sub bool,less bool)
+ * returns val CMP (base OP offset)
+ * where CMP is <= if less, >= otherwise
+ *   and OP is - if sub, + otherwise
+ * We treat negative values of offset as special: they indicate
+ * the (negation of) a cidr prefix length
+ */
+PG_FUNCTION_INFO_V1(ip6_in_range_bigint);
+Datum
+ip6_in_range_bigint(PG_FUNCTION_ARGS)
+{
+	IP6 *val = PG_GETARG_IP6_P(0);
+	IP6 *base = PG_GETARG_IP6_P(1);
+	int64 offset = PG_GETARG_INT64(2);
+	bool sub = PG_GETARG_BOOL(3);
+	bool less = PG_GETARG_BOOL(4);
+	bool res;
+
+	if (offset < -128)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE),
+				 errmsg("invalid preceding or following size in window function"),
+				 errdetail("Offset value " INT64_FORMAT " is outside the range -128 to 2^63-1", offset)));
+
+	if (offset < 0)
+	{
+		int bits = -offset;
+		res = ip6_in_range_internal_bits(val, base, bits, sub, less);
+	}
+	else
+	{
+		IP6 offs;
+		offs.bits[0] = 0;
+		offs.bits[1] = offset;
+		res = ip6_in_range_internal(val, base, &offs, sub, less);
+	}
+
+	PG_RETURN_BOOL(res);
+}
+
+PG_FUNCTION_INFO_V1(ip6_in_range_ip6);
+Datum
+ip6_in_range_ip6(PG_FUNCTION_ARGS)
+{
+	IP6 *val = PG_GETARG_IP6_P(0);
+	IP6 *base = PG_GETARG_IP6_P(1);
+	IP6 *offset = PG_GETARG_IP6_P(2);
+	bool sub = PG_GETARG_BOOL(3);
+	bool less = PG_GETARG_BOOL(4);
+
+	PG_RETURN_BOOL(ip6_in_range_internal(val, base, offset, sub, less));
+}
+
+#if 0
+/*
+ * This one is left disabled because it's inefficient and causes type
+ * ambiguity problems; if you want it, use an explicit numeric::ip6 cast
+ * insteag to get the previous function. Only leaving the code here for
+ * reference purposes.
+ */
+PG_FUNCTION_INFO_V1(ip6_in_range_numeric);
+Datum
+ip6_in_range_numeric(PG_FUNCTION_ARGS)
+{
+	IP6 *val = PG_GETARG_IP6_P(0);
+	IP6 *base = PG_GETARG_IP6_P(1);
+	Numeric offset;
+	bool sub = PG_GETARG_BOOL(3);
+	bool less = PG_GETARG_BOOL(4);
+	Datum zero;
+	MemoryContext oldcontext;
+	MemoryContext mycontext = fcinfo->flinfo->fn_extra;
+	bool res;
+
+	/*
+	 * This is tricky because we have to not leak memory into the caller's
+	 * context.
+	 *
+	 * Retail pfree of everything would be too hard, so we make a memory
+	 * context and store it in fn_extra, resetting it each time.
+	 */
+	if (!mycontext)
+		fcinfo->flinfo->fn_extra = mycontext =
+			AllocSetContextCreate(fcinfo->flinfo->fn_mcxt,
+								  "ip6_in_range_numeric workspace",
+								  ALLOCSET_SMALL_SIZES);
+	oldcontext = MemoryContextSwitchTo(mycontext);
+
+	/*
+	 * Don't do this before switching contexts since it may detoast.
+	 */
+	offset = PG_GETARG_NUMERIC(2);
+	zero = DirectFunctionCall1(int4_numeric, Int32GetDatum(0));
+
+	if (DatumGetBool(DirectFunctionCall2(numeric_lt, NumericGetDatum(offset), zero)))
+	{
+		Datum tmp1 = DirectFunctionCall2(numeric_larger,
+						 DirectFunctionCall1(int4_numeric, Int32GetDatum(-128)),
+						 DirectFunctionCall1(numeric_floor, NumericGetDatum(offset)));
+		int32 bits;
+		if (!DatumGetBool(DirectFunctionCall2(numeric_eq, NumericGetDatum(offset), tmp1)))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE),
+					 errmsg("invalid preceding or following size in window function"),
+					 errdetail("numeric value is not an integer in the range -128 to 2^128")));
+		bits = DatumGetInt32(DirectFunctionCall1(numeric_int4, NumericGetDatum(offset)));
+		res = ip6_in_range_internal_bits(val, base, bits, sub, less);
+	}
+	else
+	{
+		IP6 *offs = DatumGetIP6P(DirectFunctionCall1(ip6_cast_from_numeric, NumericGetDatum(offset)));
+		res = ip6_in_range_internal(val, base, offs, sub, less);
+	}
+
+	MemoryContextSwitchTo(oldcontext);
+	MemoryContextReset(mycontext);
+	PG_RETURN_BOOL(res);
+}
+#endif
 
 /*****************************************************************************
  *                                                 GiST functions

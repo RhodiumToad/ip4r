@@ -12,6 +12,11 @@ CHANGES in version 2.4:
 
  * Support new hash functions for hash partitioning.
 
+ * Support window function RANGE offsets in pg11+, including a special
+   case where negative offset values are treated as CIDR prefix
+   lengths (so RANGE BETWEEN -16 PRECEDING AND -16 FOLLOWING includes
+   in the window frame all rows in the same /16 as the current row).
+
  * Fix a historical oversight with the hash function for iprange, in
    which it would return different values for ip6 cidr ranges than the
    ip6r hash function. This was not a bug in that no queries would
@@ -232,6 +237,12 @@ The following type conversions are supported:
   bigint        |  ip4       |  ip4(bigint)     or  bigint::ip4  (explicit)
   ip4           |  float8    |  to_double(ip4)  or  ip4::float8  (explicit)
   float8        |  ip4       |  ip4(float8)     or  float8::ip4  (explicit)
+  ipX           |  varbit    |  to_bit(ipX)     or  ipX::varbit  (explicit)
+  bit(32)       |  ip4       |  ip4(bit)        or  bit::ip4     (explicit)
+  bit(128)      |  ip6       |  ip6(bit)        or  bit::ip6     (explicit)
+  varbit        |  ipX       |  ipX(varbit)     or  varbit::ipX  (explicit)
+  ipX           |  bytea     |  to_bytea(ipX)   or  ipX::bytea   (explicit)
+  bytea         |  ipX       |  ipX(bytea)      or  bytea::ipX   (explicit)
   ipX           |  ipXr      |  ipXr(ipX)  or  ipX::ipXr  (implicit)
   ip4           |  ipaddress |  ipaddress(ip4)  or  ip4::ipaddress (implicit)
   ip6           |  ipaddress |  ipaddress(ip6)  or  ip6::ipaddress (implicit)
@@ -363,6 +374,9 @@ ipXr supports the following type conversions:
   text          |  ipXr     |  ipXr(text) or  text::ipXr (explicit)
   ipXr          |  cidr     |  cidr(ipXr) or  ipXr::cidr (explicit)
   cidr          |  ipXr     |  ipXr(cidr) or  cidr::ipXr (assignment)
+  ipXr          |  varbit   |  to_bit(ipXr) or ipXr::varbit  (explicit)
+  varbit        |  ip4r     |  ip4r(varbit) or varbit::ip4r  (explicit)
+  varbit        |  ip6r     |  ip6r(varbit) or varbit::ip6r  (explicit)
 
 The conversion cidr(ipXr) returns NULL if the ipXr value does not
 represent a valid CIDR range.
@@ -383,6 +397,10 @@ ipXr supports the following functions:
 
   upper(ipXr) returns ipX
   |  returns the upper end of the ipXr range, as an ipX value
+
+  cidr_split(ipXr) returns setof ipXr
+  |  splits the range up into separate CIDR blocks, and returns each one
+  |  as a separate row
 
 ipXr supports the following operators:
 
@@ -498,7 +516,7 @@ SELECT DISTINCT ON (ips.ip) ips.ip, ranges.range
 AUTHORS
 =======
 
-this code by andrew@tao11.riddles.org.uk Oct 2004 - Aug 2016
+this code by andrew@tao11.riddles.org.uk Oct 2004 - 2018
 derived from 'ipr' by Steve Atkins <steve@blighty.com> August 2003
 derived from the 'seg' type distributed with PostgreSQL.
 

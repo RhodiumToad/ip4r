@@ -645,6 +645,11 @@ CREATE FUNCTION ip6r_cmp(ip6r,ip6r) RETURNS integer AS 'MODULE_PATHNAME' LANGUAG
 CREATE FUNCTION ipaddress_cmp(ipaddress,ipaddress) RETURNS integer AS 'MODULE_PATHNAME','ipaddr_cmp' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION iprange_cmp(iprange,iprange) RETURNS integer AS 'MODULE_PATHNAME' LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION in_range(ip4,ip4,bigint,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip4_in_range_bigint' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip4,ip4,ip4,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip4_in_range_ip4' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip6,ip6,bigint,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip6_in_range_bigint' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip6,ip6,ip6,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip6_in_range_ip6' LANGUAGE C IMMUTABLE STRICT;
+
 CREATE OPERATOR CLASS btree_ip4_ops DEFAULT FOR TYPE ip4 USING btree AS
        OPERATOR	1	< ,
        OPERATOR	2	<= ,
@@ -852,6 +857,14 @@ DO $s$
 		       format('%s_hash_extended', r.tname),
 		       r.tname);
       END LOOP;
+      ALTER OPERATOR FAMILY btree_ip4_ops USING btree
+        ADD FUNCTION 3 (ip4,bigint) in_range(ip4,ip4,bigint,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip4_ops USING btree
+        ADD FUNCTION 3 (ip4,ip4) in_range(ip4,ip4,ip4,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip6_ops USING btree
+        ADD FUNCTION 3 (ip6,bigint) in_range(ip6,ip6,bigint,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip6_ops USING btree
+        ADD FUNCTION 3 (ip6,ip6) in_range(ip6,ip6,ip6,boolean,boolean);
     END IF;
   END;
 $s$;

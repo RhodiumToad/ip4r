@@ -261,6 +261,8 @@ Datum ip4r_size_exact(PG_FUNCTION_ARGS);
 Datum ip4r_prefixlen(PG_FUNCTION_ARGS);
 Datum ip4r_cmp(PG_FUNCTION_ARGS);
 Datum ip4_cmp(PG_FUNCTION_ARGS);
+Datum ip4_in_range_bigint(PG_FUNCTION_ARGS);
+Datum ip4_in_range_ip4(PG_FUNCTION_ARGS);
 Datum ip4r_left_of(PG_FUNCTION_ARGS);
 Datum ip4r_right_of(PG_FUNCTION_ARGS);
 
@@ -340,6 +342,11 @@ Datum ip6r_size_exact(PG_FUNCTION_ARGS);
 Datum ip6r_prefixlen(PG_FUNCTION_ARGS);
 Datum ip6r_cmp(PG_FUNCTION_ARGS);
 Datum ip6_cmp(PG_FUNCTION_ARGS);
+Datum ip6_in_range_bigint(PG_FUNCTION_ARGS);
+Datum ip6_in_range_ip6(PG_FUNCTION_ARGS);
+#if 0
+Datum ip6_in_range_numeric(PG_FUNCTION_ARGS);
+#endif
 Datum ip6r_left_of(PG_FUNCTION_ARGS);
 Datum ip6r_right_of(PG_FUNCTION_ARGS);
 

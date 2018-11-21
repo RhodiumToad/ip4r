@@ -60,6 +60,12 @@ CREATE FUNCTION ip4r_hash_extended(ip4r,bigint) RETURNS bigint AS 'MODULE_PATHNA
 CREATE FUNCTION ip6r_hash_extended(ip6r,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'ip6r_hash_extended' LANGUAGE C IMMUTABLE STRICT;
 CREATE FUNCTION iprange_hash_extended(iprange,bigint) RETURNS bigint AS 'MODULE_PATHNAME', 'iprange_hash_extended' LANGUAGE C IMMUTABLE STRICT;
 
+-- new btree/range funcs
+CREATE FUNCTION in_range(ip4,ip4,bigint,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip4_in_range_bigint' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip4,ip4,ip4,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip4_in_range_ip4' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip6,ip6,bigint,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip6_in_range_bigint' LANGUAGE C IMMUTABLE STRICT;
+CREATE FUNCTION in_range(ip6,ip6,ip6,boolean,boolean) RETURNS boolean AS 'MODULE_PATHNAME','ip6_in_range_ip6' LANGUAGE C IMMUTABLE STRICT;
+
 -- drop/create hash opclass
 
 DO $s$
@@ -217,6 +223,14 @@ DO $s$
                       format('%s_hash_extended', r.tname),
                       r.tname);
       END LOOP;
+      ALTER OPERATOR FAMILY btree_ip4_ops USING btree
+        ADD FUNCTION 3 (ip4,bigint) in_range(ip4,ip4,bigint,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip4_ops USING btree
+        ADD FUNCTION 3 (ip4,ip4) in_range(ip4,ip4,ip4,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip6_ops USING btree
+        ADD FUNCTION 3 (ip6,bigint) in_range(ip6,ip6,bigint,boolean,boolean);
+      ALTER OPERATOR FAMILY btree_ip6_ops USING btree
+        ADD FUNCTION 3 (ip6,ip6) in_range(ip6,ip6,ip6,boolean,boolean);
     END IF;
   END;
 $s$;

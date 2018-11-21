@@ -11,7 +11,9 @@ SRC_SQL	= ip4r--2.4.sql \
 	  ip4r--unpackaged2.0--2.0.sql \
 	  ip4r--unpackaged1--2.0.sql
 DATA	= $(addprefix scripts/, $(SRC_SQL))
-REGRESS = ip4r
+REGRESS = ip4r $(REGRESS_$(MAJORVERSION))
+REGRESS_11 := ip4r-v11
+REGRESS_12 := $(REGRESS_11)
 else
 DATA_built = ip4r.sql
 EXTRA_CLEAN += ip4r.sql.in sql/ip4r-legacy.sql expected/ip4r-legacy.out
