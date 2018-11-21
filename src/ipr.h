@@ -17,6 +17,10 @@
 #error "Unknown or unsupported postgresql version"
 #endif
 
+#ifndef PGDLLEXPORT
+#define PGDLLEXPORT
+#endif
+
 PGDLLEXPORT bool ip4_raw_input(const char *src, uint32 *dst);
 PGDLLEXPORT bool ip6_raw_input(const char *src, uint64 *dst);
 PGDLLEXPORT int ip4_raw_output(uint32 ip, char *str, int len);

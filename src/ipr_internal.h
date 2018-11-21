@@ -25,6 +25,8 @@
 #define DatumGetUInt64(d_) ((uint64) DatumGetInt64(d_))
 #endif
 
+#include "access/hash.h"
+
 static inline
 Datum hash_any_extended(register const unsigned char *k,
 						register int keylen, uint64 seed)
