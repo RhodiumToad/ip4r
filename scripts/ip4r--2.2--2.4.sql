@@ -110,7 +110,7 @@ DO $s$
 		     AND refobjid = opc_oid
 		     AND classid = 'pg_class'::regclass
 		     AND deptype = 'n');
-    IF cardinality(deps) > 0 THEN
+    IF deps <> '{}' THEN
       -- we don't expect to find anything except indexes
       SELECT format('Table %s depends on hash_iprange_ops', oid::regclass)
         INTO str
@@ -158,6 +158,7 @@ DO $s$
         ALTER EXTENSION ip4r DROP TABLE ip4r_update_to_2_4.update_indexes;
 	FOR r IN SELECT format('DROP INDEX %s RESTRICT', o::regclass) as cmd
 	           FROM UNNEST(deps) u(o) LOOP
+          RAISE INFO 'executing %', r.cmd;
 	  EXECUTE r.cmd;
 	END LOOP;
       ELSIF cfgval = 'rebuild' THEN
@@ -165,6 +166,7 @@ DO $s$
 	FOR r IN SELECT format('DROP INDEX %s RESTRICT', o::regclass) as dropcmd,
 	                pg_get_indexdef(o) as createcmd
 	           FROM UNNEST(deps) u(o) LOOP
+          RAISE INFO 'executing %', r.dropcmd;
 	  EXECUTE r.dropcmd;
 	  cmds := cmds || r.createcmd;
 	END LOOP;
@@ -186,7 +188,7 @@ DO $s$
         EXECUTE r.cmd;
       END LOOP;
       RAISE INFO 'index rebuilds completed';
-    ELSIF cfgval = 'drop' AND cardinality(deps) > 0 THEN
+    ELSIF cfgval = 'drop' AND deps <> '{}' THEN
       RAISE LOG 'table ip4r_update_to_2_4.update_indexes was created';
       RAISE INFO 'table ip4r_update_to_2_4.update_indexes was created';
     END IF;

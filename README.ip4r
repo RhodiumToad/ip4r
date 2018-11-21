@@ -13,43 +13,47 @@ CHANGES in version 2.4:
  * Support new hash functions for hash partitioning.
 
  * Support window function RANGE offsets in pg11+, including a special
-   case where negative offset values are treated as CIDR prefix
-   lengths (so RANGE BETWEEN -16 PRECEDING AND -16 FOLLOWING includes
-   in the window frame all rows in the same /16 as the current row).
+   case where negative offset values are treated as CIDR prefix lengths
+   (so RANGE BETWEEN -16 PRECEDING AND -16 FOLLOWING includes in the
+   window frame all rows in the same /16 as the current row).
 
- * Fix a historical oversight with the hash function for iprange, in
-   which it would return different values for ip6 cidr ranges than the
-   ip6r hash function. This was not a bug in that no queries would
-   give wrong answers, but it would prevent any future reorganization
-   of the opclass to handle cross-type comparisons. Since allowing
-   hash partitioning has the practical effect of casting the hash
-   function in stone (far more so than hash indexes do), best to fix
-   this now.
+ * Fix a historical oversight with the hash function for iprange, in which
+   it would return different values for ip6 cidr ranges than the ip6r hash
+   function. This was not a bug in that no queries would give wrong
+   answers, but it would prevent any future reorganization of the opclass
+   to handle cross-type comparisons. Since allowing hash partitioning has
+   the practical effect of casting the hash function in stone (far more so
+   than hash indexes do), best to fix this now.
 
-   The result of the function iprangehash(iprange) is NOT changed by
-   this update, on the assumption that it might have been in use for
-   inheritance partitioning or other explicit uses. Instead, a new
-   hash function is added for the opclass to use.
+   The result of the function iprangehash(iprange) is NOT changed by this
+   update, on the assumption that it might have been in use for
+   inheritance partitioning or other explicit uses. Instead, a new hash
+   function is added for the opclass to use.
 
-   NOTE: This version requires any hash indexes on iprange columns to
-   be rebuilt. An ALTER EXTENSION ... UPDATE command will refuse to
-   run if it detects any such indexes (it will report the offending
-   indexes in INFO messages to the client). You can automatically drop
-   or recreate affected indexes by performing one of these commands
-   before the ALTER EXTENSION:
+   NOTE: This version requires any hash indexes on iprange columns to be
+   rebuilt. An ALTER EXTENSION ... UPDATE command will refuse to run if it
+   detects any such indexes (it will report the offending indexes in INFO
+   messages to the client). You can automatically drop or recreate
+   affected indexes by performing one of these commands before the ALTER
+   EXTENSION:
 
      SET ip4r.update_indexes = 'drop';
      SET ip4r.update_indexes = 'rebuild';
 
-   The value 'drop' will drop any iprange hash indexes and complete
-   the upgrade. If any indexes were dropped it will leave behind a new
-   table named ip4r_update_to_2_4.update_indexes containing the
-   affected table and index information, including the CREATE INDEX
-   command as obtained by pg_get_indexdef(). This table is not part of
-   the extension and can be dropped when the data is no longer needed.
-   The value 'rebuild' will cause the update script to perform the
-   needed CREATE INDEX commands itself (which of course may take some
-   time).
+   (on pg 9.1 you will have to add 'ip4r' to custom_variable_classes
+   in postgresql.conf and restart before doing this)
+
+   The value 'drop' will drop any iprange hash indexes and complete the
+   upgrade. The DROP commands will be done with RESTRICT: if there are any
+   additional dependencies on the indexes in question, the upgrade will
+   not proceed; these will have to be dealt with manually. If any indexes
+   were dropped the upgrade will leave behind a new table named
+   ip4r_update_to_2_4.update_indexes containing the affected table and
+   index information, including the CREATE INDEX command as obtained by
+   pg_get_indexdef(). This table is not part of the extension and can be
+   dropped when the data is no longer needed. The value 'rebuild' will
+   cause the update script to perform the needed CREATE INDEX commands
+   itself (which of course may take some time).
 
 CHANGES in version 2.3:
 =======================
