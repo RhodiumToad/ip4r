@@ -165,6 +165,10 @@ typedef void *IPR_P;  /* unaligned! */
 
 #if PG_VERSION_NUM < 110000
 
+#ifndef ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE
+#define ERRCODE_INVALID_PRECEDING_OR_FOLLOWING_SIZE MAKE_SQLSTATE('2','2','0','1','3')
+#endif
+
 #ifndef DatumGetUInt64
 #define DatumGetUInt64(d_) ((uint64) DatumGetInt64(d_))
 #endif
