@@ -1,6 +1,24 @@
 /* iprange.c */
 
-#include "ipr.h"
+#include "postgres.h"
+
+#include <math.h>
+#include <sys/socket.h>
+
+#include "fmgr.h"
+#include "funcapi.h"
+
+#include "access/gist.h"
+#include "access/hash.h"
+#include "access/skey.h"
+#include "libpq/pqformat.h"
+#include "utils/builtins.h"
+#include "utils/elog.h"
+#include "utils/numeric.h"
+#include "utils/palloc.h"
+#include "utils/varbit.h"
+
+#include "ipr_internal.h"
 
 #include "ip4r_funcs.h"
 #include "ip6r_funcs.h"
@@ -52,7 +70,6 @@ void iprange_af_mismatch(void)
  *  32 bytes                 - arbitrary IP6R range
  */
 
-static
 int ipr_unpack(IPR_P in, IPR *out)
 {
 	unsigned char *ptr = (unsigned char *) VARDATA_ANY(in);
@@ -94,7 +111,6 @@ int ipr_unpack(IPR_P in, IPR *out)
     }
 }
 
-static
 IPR_P ipr_pack(int af, IPR *val)
 {
     IPR_P out = palloc(VARHDRSZ + sizeof(IP6R));

@@ -1,12 +1,11 @@
 /* raw_io.c */
 
-/*
- * Copyright (c) 2011 Andrew Gierth
- *
- * Licensed under the same terms as PostgreSQL itself.
- */
+#include "postgres.h"
 
-#include "ipr.h"
+#include <stdio.h>
+#include <string.h>
+
+#include "ipr_internal.h"
 
 bool ip4_raw_input(const char *osrc, uint32 *dst)
 {

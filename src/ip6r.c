@@ -1,9 +1,25 @@
 /* ip6r.c */
 
-#include "ipr.h"
+#include "postgres.h"
 
+#include <math.h>
+#include <sys/socket.h>
+
+#include "fmgr.h"
+#include "funcapi.h"
+
+#include "access/gist.h"
+#include "access/hash.h"
+#include "access/skey.h"
+#include "libpq/pqformat.h"
+#include "utils/builtins.h"
+#include "utils/elog.h"
+#include "utils/numeric.h"
+#include "utils/palloc.h"
+#include "utils/varbit.h"
+
+#include "ipr_internal.h"
 #include "ip6r_funcs.h"
-
 
 /* extract an IP range from text.
  */

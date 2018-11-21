@@ -1,6 +1,7 @@
 /* ip4r_module.c */
 
-#include "ipr.h"
+#include "postgres.h"
+#include "fmgr.h"
 
 PG_MODULE_MAGIC;
 
