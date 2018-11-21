@@ -4,6 +4,9 @@
 
 #include "ipr.h"
 
+#define IP4R_VERSION_STR "2.4.0"
+#define IP4R_VERSION_NUM 20400
+
 /* PG version dependencies */
 
 #define INET_STRUCT_DATA(is_) ((inet_struct *)VARDATA_ANY(is_))
