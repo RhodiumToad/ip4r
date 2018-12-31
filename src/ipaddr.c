@@ -214,16 +214,18 @@ PG_FUNCTION_INFO_V1(ipaddr_out);
 Datum
 ipaddr_out(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
-    char *out = palloc(IP6_STRING_MAX);
+	IP_P ipp = PG_GETARG_IP_P(0);
+	char *out = "";
 	IP ip;
 
 	switch (ip_unpack(ipp, &ip))
 	{
 		case PGSQL_AF_INET:
-			ip4_raw_output(ip.ip4, out, IP6_STRING_MAX);
+			out = palloc(IP4_STRING_MAX);
+			ip4_raw_output(ip.ip4, out, IP4_STRING_MAX);
 			break;
 		case PGSQL_AF_INET6:
+			out = palloc(IP6_STRING_MAX);
 			ip6_raw_output(ip.ip6.bits, out, IP6_STRING_MAX);
 			break;
 	}
