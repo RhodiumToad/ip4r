@@ -27,8 +27,6 @@ OBJS_C	= ip4r_module.o ip4r.o ip6r.o ipaddr.o iprange.o raw_io.o
 OBJS	= $(addprefix src/, $(OBJS_C))
 INCS	= ipr.h ipr_internal.h
 
-HEADERS = src/ipr.h
-
 # if VPATH is not already set, but the makefile is not in the current
 # dir, then assume a vpath build using the makefile's directory as
 # source. PGXS will set $(srcdir) accordingly.
