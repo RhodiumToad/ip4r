@@ -24,6 +24,7 @@ env:
     - PG=9.6
     - PG=10
     - PG=11
+    - PG=12
 
 dist: xenial
 
