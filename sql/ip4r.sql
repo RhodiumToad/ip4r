@@ -38,6 +38,8 @@ $d$;
 
 \set VERBOSITY terse
 
+SET extra_float_digits = 0;
+
 --
 -- Valid and invalid addresses
 --
