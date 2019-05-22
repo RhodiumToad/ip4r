@@ -2,7 +2,7 @@
 addons:
   apt:
     sources:
-    - sourceline: "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main 11"
+    - sourceline: "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main 12"
       key_url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
 
 before_install:
@@ -25,7 +25,7 @@ env:
     - PG=10
     - PG=11
 
-dist: trusty
+dist: xenial
 
 sudo: required
 
