@@ -4,8 +4,8 @@
 
 #include "ipr.h"
 
-#define IP4R_VERSION_STR "2.4.0"
-#define IP4R_VERSION_NUM 20400
+#define IP4R_VERSION_STR "2.4.1"
+#define IP4R_VERSION_NUM 20401
 
 /* PG version dependencies */
 
