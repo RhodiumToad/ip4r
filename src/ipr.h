@@ -10,6 +10,13 @@
 #include "utils/inet.h"
 #include "utils/palloc.h"
 
+#if !defined(TRUE)
+#define TRUE 1
+#endif
+#if !defined(FALSE)
+#define FALSE 0
+#endif
+
 #if !defined(PG_VERSION_NUM)
 #error "Unknown or unsupported postgresql version"
 #endif
