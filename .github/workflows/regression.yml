@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+    tags:     [ REL_* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: sh
+
+    strategy:
+      matrix:
+        pgver:  [ 9.2, 9.3, 9.4, 9.5, 9.6, 10, 11, 12, 13 ]
+        pgrepo: [ "" ]
+
+    env:
+      PG:       ${{ matrix.pgver }}
+      PGREPO:   ${{ matrix.pgrepo }}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: cleanup pg
+      run: |
+        sudo apt-get -y --purge --no-upgrade remove postgresql libpq-dev libpq5 postgresql-client-common postgresql-common
+        curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" >/etc/apt/sources.list.d/pgdg.list'
+        sudo apt-get update -qq
+        sudo rm -rf /var/lib/postgresql
+
+    - name: install pg
+      run: |
+        sudo apt-get -y \
+               -o Dpkg::Options::=--force-confdef \
+               -o Dpkg::Options::=--force-confnew \
+               ${PGREPO:+-t "$PGREPO"} \
+               install postgresql-${PG:?} postgresql-server-dev-${PG:?}
+        sudo -u postgres createuser -s "$USER"
+
+    - name: build and test
+      run: |
+        make && sudo -E make install && time make installcheck
+
+    - name: show output
+      if: always()
+      run: |
+        cat regression.diffs || true
