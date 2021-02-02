@@ -1,0 +1,42 @@
+name: Build on MacOS
+
+on:
+  push:
+    branches: [ master ]
+    tags:     [ REL_* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        shell: sh
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: start pg
+      run: |
+        brew services start postgresql
+
+    - name: build
+      run: |
+        make && sudo -E make install
+
+    - name: wait for pg
+      run: |
+        n=0
+        while ! pg_isready; do [ $(( n += 1 )) -gt 10 ] && exit 1; sleep $n; done
+
+    - name: test
+      run: |
+        time make installcheck
+
+    - name: show output
+      if: always()
+      run: |
+        cat regression.diffs || true
