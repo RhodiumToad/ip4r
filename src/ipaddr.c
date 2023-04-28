@@ -204,10 +204,9 @@ ipaddr_in(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET, &ip));
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP value: '%s'", str)));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_out);
@@ -243,18 +242,18 @@ ipaddr_recv(PG_FUNCTION_ARGS)
 
 	af = pq_getmsgbyte(buf);
 	if (af != PGSQL_AF_INET && af != PGSQL_AF_INET6)
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid address family in external IP value")));
 	bits = pq_getmsgbyte(buf);
 	if (bits != ipr_af_maxbits(af))
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
 	(void) pq_getmsgbyte(buf);  /* ignore flag */
 	nbytes = pq_getmsgbyte(buf);
 	if (nbytes*8 != bits)
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid address length in external IP value")));
 
@@ -373,10 +372,9 @@ ipaddr_cast_from_text(PG_FUNCTION_ARGS)
 		}
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP value in text")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_from_inet);
@@ -397,10 +395,9 @@ ipaddr_cast_from_inet(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid INET value for conversion to IP")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_cidr);
@@ -454,10 +451,9 @@ ipaddr_cast_to_ip4(PG_FUNCTION_ARGS)
 		PG_RETURN_IP4(ip.ip4);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP value in cast to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_ip6);
@@ -474,10 +470,9 @@ ipaddr_cast_to_ip6(PG_FUNCTION_ARGS)
 		PG_RETURN_IP6_P(out);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP value in cast to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_from_bit);
@@ -497,10 +492,9 @@ ipaddr_cast_from_bit(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BIT value for conversion to IPADDRESS")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_bit);
@@ -527,10 +521,9 @@ ipaddr_cast_from_bytea(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BYTEA value for conversion to IPADDRESS")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_bytea);

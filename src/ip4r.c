@@ -150,10 +150,9 @@ ip4_in(PG_FUNCTION_ARGS)
     if (ip4_raw_input(str, &ip))
         PG_RETURN_IP4(ip);
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP4 value: '%s'", str)));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4_out);
@@ -233,10 +232,9 @@ ip4_cast_from_text(PG_FUNCTION_ARGS)
             PG_RETURN_IP4(ip);
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP4 value in text")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_from_inet);
@@ -253,10 +251,9 @@ ip4_cast_from_inet(PG_FUNCTION_ARGS)
         PG_RETURN_IP4(ip);
     }
 
-    ereport(ERROR,
+	ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid INET value for conversion to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_to_cidr);
@@ -306,12 +303,12 @@ ip4_cast_from_bigint(PG_FUNCTION_ARGS)
 {
     int64 val = PG_GETARG_INT64(0);
 
-	if (val < -(int64)0x80000000UL || val > (int64)0xFFFFFFFFUL)
-        ereport(ERROR,
-                (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-                 errmsg("ip address out of range")));
+	if (val >= -(int64)0x80000000UL && val <= (int64)0xFFFFFFFFUL)
+		PG_RETURN_IP4(val);
 
-    PG_RETURN_IP4(val);
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+			 errmsg("ip address out of range")));
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_to_double);
@@ -336,20 +333,20 @@ ip4_cast_from_double(PG_FUNCTION_ARGS)
                  errmsg("double converted to IP4 is not integral")));
     }
 
-	if (ival < -(float8)0x80000000UL || ival > (float8)0xFFFFFFFFUL)
-        ereport(ERROR,
-                (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-                 errmsg("ip address out of range")));
-
 	/*
 	 * casting directly to ulong evokes the nasal demons for negative values,
 	 * casting to long first evokes them for large positive values if long is
 	 * 32bit.
 	 */
-	if (ival < 0)
+
+	if (ival >= -(float8)0x80000000UL && ival < 0)
 		PG_RETURN_IP4((unsigned long) (long) ival);
-	else
+	else if (ival >= 0 && ival <= (float8)0xFFFFFFFFUL)
 		PG_RETURN_IP4((unsigned long) ival);
+
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+			 errmsg("ip address out of range")));
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_from_numeric);
@@ -359,12 +356,12 @@ ip4_cast_from_numeric(PG_FUNCTION_ARGS)
     Datum val_num = PG_GETARG_DATUM(0);
 	int64 val = DatumGetInt64(DirectFunctionCall1(numeric_int8,val_num));
 
-	if (val < -(int64)0x80000000UL || val > (int64)0xFFFFFFFFUL)
-        ereport(ERROR,
-                (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-                 errmsg("ip address out of range")));
+	if (val >= -(int64)0x80000000UL && val <= (int64)0xFFFFFFFFUL)
+		PG_RETURN_IP4((unsigned long) val);
 
-    PG_RETURN_IP4((unsigned long) val);
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+			 errmsg("ip address out of range")));
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_from_bit);
@@ -380,10 +377,9 @@ ip4_cast_from_bit(PG_FUNCTION_ARGS)
         PG_RETURN_IP4(ip);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BIT value for conversion to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_to_bit);
@@ -419,10 +415,9 @@ ip4_cast_from_bytea(PG_FUNCTION_ARGS)
         PG_RETURN_IP4(ip);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BYTEA value for conversion to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4_cast_to_bytea);
@@ -517,10 +512,10 @@ ip4_plus_bigint(PG_FUNCTION_ARGS)
 {
     IP4 ip = PG_GETARG_IP4(0);
     int64 addend = PG_GETARG_INT64(1);
-    int64 result = (int64) ip + addend;
+    uint64 result = (uint64) ip + addend;
 
     if (((addend < 0) != (result < ip))
-        || result != (int64)(IP4)result)
+        || result != (uint64)(IP4)result)
     {
         ereport(ERROR,
                 (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
@@ -537,10 +532,10 @@ ip4_plus_numeric(PG_FUNCTION_ARGS)
     IP4 ip = PG_GETARG_IP4(0);
     Datum addend_num = PG_GETARG_DATUM(1);
 	int64 addend = DatumGetInt64(DirectFunctionCall1(numeric_int8,addend_num));
-    int64 result = (int64) ip + addend;
+    uint64 result = (uint64) ip + addend;
 
     if (((addend < 0) != (result < ip))
-        || result != (int64)(IP4)result)
+        || result != (uint64)(IP4)result)
     {
         ereport(ERROR,
                 (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
@@ -574,10 +569,10 @@ ip4_minus_bigint(PG_FUNCTION_ARGS)
 {
     IP4 ip = PG_GETARG_IP4(0);
     int64 subtrahend = PG_GETARG_INT64(1);
-    int64 result = (int64) ip - subtrahend;
+    uint64 result = (uint64) ip - subtrahend;
 
     if (((subtrahend > 0) != (result < ip))
-        || result != (int64)(IP4)result)
+        || result != (uint64)(IP4)result)
     {
         ereport(ERROR,
                 (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
@@ -594,10 +589,10 @@ ip4_minus_numeric(PG_FUNCTION_ARGS)
     IP4 ip = PG_GETARG_IP4(0);
 	Datum subtrahend_num = PG_GETARG_DATUM(1);
 	int64 subtrahend = DatumGetInt64(DirectFunctionCall1(numeric_int8,subtrahend_num));
-    int64 result = (int64) ip - subtrahend;
+    uint64 result = (uint64) ip - subtrahend;
 
     if (((subtrahend > 0) != (result < ip))
-        || result != (int64)(IP4)result)
+        || result != (uint64)(IP4)result)
     {
         ereport(ERROR,
                 (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
@@ -673,10 +668,9 @@ ip4r_in(PG_FUNCTION_ARGS)
         PG_RETURN_IP4R_P(res);
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP4R value: \"%s\"", str)));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4r_out);
@@ -792,10 +786,9 @@ ip4r_cast_from_cidr(PG_FUNCTION_ARGS)
         }
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid CIDR value for conversion to IP4R")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4r_cast_to_cidr);
@@ -887,10 +880,9 @@ ip4r_cast_from_bit(PG_FUNCTION_ARGS)
 			PG_RETURN_IP4R_P(res);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BIT value for conversion to IP4R")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip4r_cast_to_bit);

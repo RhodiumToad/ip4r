@@ -181,12 +181,18 @@ iprange_in(PG_FUNCTION_ARGS)
 	}
 	else if (strchr(str,':'))
 	{
-		ipr.ip6r = *DatumGetIP6RP(DirectFunctionCall1(ip6r_in,CStringGetDatum(str)));
+		Datum res = ip6r_in(fcinfo);
+		if (SOFT_ERROR_OCCURRED(fcinfo->context))
+			PG_RETURN_DATUM(res);
+		ipr.ip6r = *DatumGetIP6RP(res);
 		PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6, &ipr));
 	}
 	else
 	{
-		ipr.ip4r = *DatumGetIP4RP(DirectFunctionCall1(ip4r_in,CStringGetDatum(str)));
+		Datum res = ip4r_in(fcinfo);
+		if (SOFT_ERROR_OCCURRED(fcinfo->context))
+			PG_RETURN_DATUM(res);
+		ipr.ip4r = *DatumGetIP4RP(res);
 		PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET, &ipr));
 	}
 }
@@ -240,12 +246,12 @@ iprange_recv(PG_FUNCTION_ARGS)
 
 	af = pq_getmsgbyte(buf);
 	if (af != 0 && af != PGSQL_AF_INET && af != PGSQL_AF_INET6)
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid address family in external IPR value")));
 	bits = pq_getmsgbyte(buf);
 	if (bits != 255 && bits > ipr_af_maxbits(af))
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
 	(void) pq_getmsgbyte(buf);  /* ignore flag */
@@ -471,19 +477,26 @@ iprange_cast_from_text(PG_FUNCTION_ARGS)
     text *txt = PG_GETARG_TEXT_PP(0);
     int tlen = VARSIZE_ANY_EXHDR(txt);
     char buf[IP6R_STRING_MAX];
+	LOCAL_FCINFO(fc, 3);
+	Datum res;
 
     if (tlen < sizeof(buf))
     {
         memcpy(buf, VARDATA_ANY(txt), tlen);
         buf[tlen] = 0;
 
-		PG_RETURN_DATUM(DirectFunctionCall1(iprange_in, CStringGetDatum(buf)));
+		InitFunctionCallInfoData(*fc, NULL, 1, fcinfo->fncollation, fcinfo->context, NULL);
+		LFCI_ARG_VALUE(fc, 0) = CStringGetDatum(buf);
+		LFCI_ARGISNULL(fc, 0) = false;
+
+		res = iprange_in(fc);
+		fcinfo->isnull = fc->isnull;
+		return res;
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IPR value in text")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_from_cidr);
@@ -533,10 +546,9 @@ iprange_cast_from_cidr(PG_FUNCTION_ARGS)
 		}
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid CIDR value for conversion to IPR")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_to_cidr);
@@ -709,7 +721,7 @@ iprange_cast_to_ip4r(PG_FUNCTION_ARGS)
 	IP4R *res;
 
 	if (af != PGSQL_AF_INET)
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid IPR value for conversion to IP4R")));
 
@@ -729,7 +741,7 @@ iprange_cast_to_ip6r(PG_FUNCTION_ARGS)
 	IP6R *res;
 
 	if (af != PGSQL_AF_INET6)
-		ereport(ERROR,
+		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid IPR value for conversion to IP6R")));
 

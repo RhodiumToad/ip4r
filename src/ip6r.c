@@ -158,10 +158,9 @@ ip6_in(PG_FUNCTION_ARGS)
     if (ip6_raw_input(str, ip->bits))
         PG_RETURN_IP6_P(ip);
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP6 value: '%s'", str)));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_out);
@@ -247,10 +246,9 @@ ip6_cast_from_text(PG_FUNCTION_ARGS)
             PG_RETURN_IP6_P(ip);
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP6 value in text")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_cast_from_inet);
@@ -268,10 +266,9 @@ ip6_cast_from_inet(PG_FUNCTION_ARGS)
         PG_RETURN_IP6_P(ip);
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid INET value for conversion to IP6")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_cast_to_cidr);
@@ -331,7 +328,7 @@ ip6_cast_from_numeric(PG_FUNCTION_ARGS)
 
     if (!DatumGetBool(DirectFunctionCall2(numeric_eq,tmp,val)))
     {
-        ereport(ERROR,
+        ereturn(fcinfo->context, (Datum)0,
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("invalid numeric value for conversion to IP6")));
     }
@@ -365,10 +362,9 @@ ip6_cast_from_numeric(PG_FUNCTION_ARGS)
         }
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
              errmsg("numeric value too large for conversion to IP6")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_cast_from_bit);
@@ -385,10 +381,9 @@ ip6_cast_from_bit(PG_FUNCTION_ARGS)
         PG_RETURN_IP6_P(res);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BIT value for conversion to IP6")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_cast_to_bit);
@@ -422,10 +417,9 @@ ip6_cast_from_bytea(PG_FUNCTION_ARGS)
         PG_RETURN_IP6_P(res);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BYTEA value for conversion to IP4")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6_cast_to_bytea);
@@ -749,10 +743,9 @@ ip6r_in(PG_FUNCTION_ARGS)
         PG_RETURN_IP6R_P(res);
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP6R value: \"%s\"", str)));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6r_out);
@@ -846,10 +839,9 @@ ip6r_cast_from_text(PG_FUNCTION_ARGS)
         }
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid IP6R value in text")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6r_cast_from_cidr);
@@ -873,10 +865,9 @@ ip6r_cast_from_cidr(PG_FUNCTION_ARGS)
         }
     }
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid CIDR value for conversion to IP6R")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6r_cast_to_cidr);
@@ -961,10 +952,9 @@ ip6r_cast_from_bit(PG_FUNCTION_ARGS)
 			PG_RETURN_IP6_P(res);
 	}
 
-    ereport(ERROR,
+    ereturn(fcinfo->context, (Datum)0,
             (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
              errmsg("invalid BIT value for conversion to IP6R")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(ip6r_cast_to_bit);

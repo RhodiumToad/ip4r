@@ -40,6 +40,28 @@ Datum hash_any_extended(register const unsigned char *k,
 
 #endif
 
+/* cope with variable-length fcinfo in pg12 */
+#if PG_VERSION_NUM < 120000
+#define LOCAL_FCINFO(name_,nargs_) \
+	FunctionCallInfoData name_##data; \
+	FunctionCallInfo name_ = &name_##data
+
+#define LFCI_ARG_VALUE(fci_,n_) ((fci_)->arg[n_])
+#define LFCI_ARGISNULL(fci_,n_) ((fci_)->argnull[n_])
+#else
+#define LFCI_ARG_VALUE(fci_,n_) ((fci_)->args[n_].value)
+#define LFCI_ARGISNULL(fci_,n_) ((fci_)->args[n_].isnull)
+#endif
+
+/* Soft-error handling is new in pg16 */
+#if PG_VERSION_NUM >= 160000
+#include "nodes/miscnodes.h"
+#else
+#define ereturn(context_, dummy_value_, ...)	\
+	do { ereport(ERROR, __VA_ARGS__); return dummy_value_; } while(0)
+#define SOFT_ERROR_OCCURRED(escontext) false
+#endif
+
 /* funcs */
 
 Datum ip4_in(PG_FUNCTION_ARGS);
