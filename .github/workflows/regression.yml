@@ -21,7 +21,7 @@ jobs:
         include:
           - pgrepo: ""
           - pgver: 16
-            pgrepo: "-snapshot"
+            pgrepo: "-pgdg-snapshot"
 
     env:
       PG:       ${{ matrix.pgver }}
