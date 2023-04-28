@@ -275,6 +275,12 @@ iprange_recv(PG_FUNCTION_ARGS)
 			{
 				ipr.ip4r.lower = (IP4) pq_getmsgint(buf, sizeof(IP4));
 				ipr.ip4r.upper = (IP4) pq_getmsgint(buf, sizeof(IP4));
+				if (ipr.ip4r.upper < ipr.ip4r.lower)
+				{
+					IP4 t = ipr.ip4r.upper;
+					ipr.ip4r.upper = ipr.ip4r.lower;
+					ipr.ip4r.lower = t;
+				}
 				PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET,&ipr));
 			}
 			break;
@@ -302,15 +308,20 @@ iprange_recv(PG_FUNCTION_ARGS)
 				ipr.ip6r.lower.bits[1] = (uint64) pq_getmsgint64(buf);
 				ipr.ip6r.upper.bits[0] = (uint64) pq_getmsgint64(buf);
 				ipr.ip6r.upper.bits[1] = (uint64) pq_getmsgint64(buf);
+				if (ip6_lessthan(&ipr.ip6r.upper, &ipr.ip6r.lower))
+				{
+					IP6 t = ipr.ip6r.upper;
+					ipr.ip6r.upper = ipr.ip6r.lower;
+					ipr.ip6r.lower = t;
+				}
 				PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6,&ipr));
 			}
 			break;
 	}
 
-	ereport(ERROR,
+	ereturn(fcinfo->context, (Datum)0,
 			(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 			 errmsg("invalid address length in external IPR value")));
-    PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_send);

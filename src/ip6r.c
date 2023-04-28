@@ -770,6 +770,13 @@ ip6r_recv(PG_FUNCTION_ARGS)
     ipr->upper.bits[0] = pq_getmsgint64(buf);
     ipr->upper.bits[1] = pq_getmsgint64(buf);
 
+	if (ip6_lessthan(&ipr->upper, &ipr->lower))
+	{
+		IP6 t = ipr->upper;
+		ipr->upper = ipr->lower;
+		ipr->lower = t;
+	}
+
     PG_RETURN_IP6R_P(ipr);
 }
 

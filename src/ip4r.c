@@ -693,6 +693,13 @@ ip4r_recv(PG_FUNCTION_ARGS)
     ipr->lower = (IP4) pq_getmsgint(buf, sizeof(IP4));
     ipr->upper = (IP4) pq_getmsgint(buf, sizeof(IP4));
 
+	if (ipr->lower > ipr->upper)
+	{
+		IP4 t = ipr->upper;
+		ipr->upper = ipr->lower;
+		ipr->lower = t;
+	}
+
     PG_RETURN_IP4R_P(ipr);
 }
 
