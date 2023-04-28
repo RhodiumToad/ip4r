@@ -1,8 +1,8 @@
 
+EXTENSION= ip4r
+
 MODULE_big = ip4r
 
-ifndef NO_EXTENSION
-EXTENSION= ip4r
 SRC_SQL	= ip4r--2.4.sql \
 	  ip4r--2.2--2.4.sql \
 	  ip4r--2.1--2.2.sql \
@@ -11,14 +11,14 @@ SRC_SQL	= ip4r--2.4.sql \
 	  ip4r--unpackaged2.0--2.0.sql \
 	  ip4r--unpackaged1--2.0.sql
 DATA	= $(addprefix scripts/, $(SRC_SQL))
+
 REGRESS = ip4r $(REGRESS_$(MAJORVERSION))
 REGRESS_11 := ip4r-v11
 REGRESS_12 := $(REGRESS_11)
-else
-DATA_built = ip4r.sql
-EXTRA_CLEAN += ip4r.sql.in sql/ip4r-legacy.sql expected/ip4r-legacy.out
-REGRESS = ip4r-legacy
-endif
+REGRESS_13 := $(REGRESS_12)
+REGRESS_14 := $(REGRESS_13)
+REGRESS_15 := $(REGRESS_14)
+REGRESS_16 := $(REGRESS_15) ip4r-softerr
 
 objdir	= src
 
@@ -38,18 +38,11 @@ VPATH := $(dir $(firstword $(MAKEFILE_LIST)))
 endif
 endif
 
-ifndef NO_PGXS
 PG_CONFIG ?= pg_config
 PGXS = $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
-else
-subdir = contrib/ip4r
-top_builddir = ../..
-include $(top_builddir)/src/Makefile.global
-include $(top_srcdir)/contrib/contrib-global.mk
-endif
 
-ifeq ($(filter-out 7.% 8.0 8.1 8.2 8.3, $(MAJORVERSION)),)
+ifeq ($(filter-out 7.% 8.% 9.0, $(MAJORVERSION)),)
 $(error unsupported PostgreSQL version)
 endif
 
@@ -65,40 +58,3 @@ $(OBJS): | vpath-mkdirs
 vpath-mkdirs:
 	$(MKDIR_P) $(objdir)
 endif # VPATH
-
-ifndef EXTENSION
-
-ifeq ($(filter-out 8.4, $(MAJORVERSION)),)
-
-ip4r.sql.in: $(srcdir)/scripts/ip4r--2.4.sql $(srcdir)/tools/legacy.sed
-	sed -f $(srcdir)/tools/legacy.sed $< | sed -e '/^DO /,/^[$$]/d' >$@
-
-else
-
-ip4r.sql.in: $(srcdir)/scripts/ip4r--2.4.sql $(srcdir)/tools/legacy.sed
-	sed -f $(srcdir)/tools/legacy.sed $< >$@
-
-endif
-
-# regression test doesn't like the idea of having to build files in
-# the sql/ subdir, and looks for that only in $(srcdir). So disable
-# legacy regression tests in vpath build.
-ifndef VPATH
-sql/ip4r-legacy.sql: sql/ip4r.sql tools/legacy-r.sed
-	sed -f tools/legacy-r.sed $< >$@
-
-expected/ip4r-legacy.out: expected/ip4r.out tools/legacy-r.sed
-	sed -f tools/legacy-r.sed $< | sed -e '/^\\i /,+1d' >$@
-
-installcheck: sql/ip4r-legacy.sql expected/ip4r-legacy.out
-else
-installcheck:
-	@echo regression tests are disabled in legacy vpath build
-endif # VPATH
-
-else
-ifeq ($(filter-out 8.% 9.0, $(MAJORVERSION)),)
-$(error extension build not supported in versions before 9.1, use NO_EXTENSION=1)
-endif
-endif
-

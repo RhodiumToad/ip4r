@@ -2,6 +2,15 @@
 IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 ===========================================================
 
+CHANGES in upcoming release
+===========================
+
+ * Support pg 16.
+
+ * Remove support for some long-obsolete PG versions
+
+ * Remove support for old-style (pre-extension) building.
+
 CHANGES in version 2.4.1:
 =========================
 
@@ -522,6 +531,24 @@ SELECT DISTINCT ON (ips.ip) ips.ip, ranges.range
  WHERE ranges.range >>= ips.ip
  ORDER BY ips.ip, @ ranges.range
 
+
+Choosing an index method
+------------------------
+
+As with any data type, the choice of what index method to use (in this
+case, btree vs. GiST) is generally dictated by what comparison
+operators you want to use on the data. So a condition of the form
+WHERE clientip = $1 or WHERE clientip BETWEEN lower($1) AND upper($1)
+would make use of a btree index, whereas a for a condition like
+WHERE range >>= $1 then a GiST index would be indicated.
+
+GiST indexes are defined by this module only for ranges of addresses
+(ip4r, ip6r, iprange), so you would almost always use btree indexes
+for columns storing a single address. The sole exception to this would
+be if you need a multicolumn GiST index that combines an ip address
+with columns of other GiST-indexable types (such as PostGIS geometry),
+in which case it may make sense to cast the address to a range
+containing only the single address.
 
 
 AUTHORS
