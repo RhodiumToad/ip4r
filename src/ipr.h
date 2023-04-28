@@ -37,8 +37,8 @@ typedef uint32 IP4;
 
 /* IP4R = range of IP4, stored in host-order. fixed-length by reference */
 typedef struct IP4R {
-    IP4 lower;
-    IP4 upper;
+	IP4 lower;
+	IP4 upper;
 } IP4R;
 
 #define IP4R_INITIALIZER {0,0}
@@ -48,15 +48,15 @@ typedef struct IP4R {
  * fixed-length and pass by reference.
  */
 typedef struct IP6 {
-    uint64 bits[2];
+	uint64 bits[2];
 } IP6;
 
 #define IP6_INITIALIZER {{0,0}}
 
 /* IP6R = range of IP6. fixed-length by reference */
 typedef struct IP6R {
-    IP6 lower;
-    IP6 upper;
+	IP6 lower;
+	IP6 upper;
 } IP6R;
 
 #define IP6R_INITIALIZER {IP6_INITIALIZER,IP6_INITIALIZER}
@@ -78,31 +78,31 @@ typedef union IP {
 #define ip_sizeof(af_) ((af_) == PGSQL_AF_INET ? sizeof(IP4) : sizeof(IP6))
 #define ipr_sizeof(af_) ((af_) == PGSQL_AF_INET ? sizeof(IP4R) : sizeof(IP6R))
 
-typedef void *IP_P;  /* unaligned! */
+typedef void *IP_P;	 /* unaligned! */
 
 PGDLLEXPORT void ipaddr_internal_error(void) __attribute__((noreturn));
 
 static inline
 int ip_unpack(IP_P in, IP *out)
 {
-    switch (VARSIZE_ANY_EXHDR(in))
-    {
-        case sizeof(IP4):
-            memcpy(&out->ip4, VARDATA_ANY(in), sizeof(IP4));
-            return PGSQL_AF_INET;
-        case sizeof(IP6):
-            memcpy(&out->ip6, VARDATA_ANY(in), sizeof(IP6));
-            return PGSQL_AF_INET6;
-        default:
+	switch (VARSIZE_ANY_EXHDR(in))
+	{
+		case sizeof(IP4):
+			memcpy(&out->ip4, VARDATA_ANY(in), sizeof(IP4));
+			return PGSQL_AF_INET;
+		case sizeof(IP6):
+			memcpy(&out->ip6, VARDATA_ANY(in), sizeof(IP6));
+			return PGSQL_AF_INET6;
+		default:
 			ipaddr_internal_error();
-    }
+	}
 }
 
 static inline
 IP_P ip_pack(int af, IP *val)
 {
 	int sz = ip_sizeof(af);
-    IP_P out = palloc(VARHDRSZ + sz);
+	IP_P out = palloc(VARHDRSZ + sz);
 
 	SET_VARSIZE(out, VARHDRSZ + sz);
 	memcpy(VARDATA(out), val, sz);

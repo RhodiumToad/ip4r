@@ -23,7 +23,7 @@ bool ip4_raw_input(const char *osrc, uint32 *dst)
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
 				if (digits++ && octet == 0)
-					return false;   /* must have been a leading 0, reject */
+					return false;	/* must have been a leading 0, reject */
 				octet = (octet * 10) + (ch - '0');
 				if (octet > 255)
 					return false;
@@ -91,7 +91,7 @@ bool ip6_raw_input(const char *osrc, uint64 *dst)
 					gap = words;
 				}
 				else if (!*src)
-					return false;   /* trailing : not valid except as :: */
+					return false;	/* trailing : not valid except as :: */
 
 				tmp[words++] = word;
 				if (words > 7 && *src)
@@ -146,7 +146,7 @@ bool ip6_raw_input(const char *osrc, uint64 *dst)
 
 int ip4_raw_output(uint32 ip, char *str, int len)
 {
-    return snprintf(str, len, "%u.%u.%u.%u",
+	return snprintf(str, len, "%u.%u.%u.%u",
 					(ip >> 24)&0xff, (ip >> 16)&0xff, (ip >> 8)&0xff, (ip)&0xff);
 }
 
@@ -173,9 +173,9 @@ int ip6_raw_output(uint64 *ip, char *str, int len)
 
 	/*
 	 * Find the best place to put :: in the output. Per RFC5952, we must:
-	 *  - not use :: to replace a single 0 word
-	 *  - use :: to replace the longest string of 0 words
-	 *  - use :: to replace the leftmost candidate string of equal length
+	 *	- not use :: to replace a single 0 word
+	 *	- use :: to replace the longest string of 0 words
+	 *	- use :: to replace the leftmost candidate string of equal length
 	 *
 	 * The bitmask we construct here has the least significant bit
 	 * representing the leftmost word, and we process the bitmask by
@@ -201,7 +201,7 @@ int ip6_raw_output(uint64 *ip, char *str, int len)
 	 * all zeros (8 zero words) - '::'
 	 * 6 zero words followed by a non-zero word - '::1.2.3.4'
 	 * 5 zero words followed by 0xffff - '::ffff:1.2.3.4'
-	 * 4 zero words followed by ffff:0 - '::ffff:0:1.2.3.4'  [rfc2765]
+	 * 4 zero words followed by ffff:0 - '::ffff:0:1.2.3.4'	 [rfc2765]
 	 *
 	 * The case of 7 zero words we leave alone; that avoids trying to output
 	 * '::1' as '::0.0.0.1'. We assume that '0.0.x.y' will never be a valid

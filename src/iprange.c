@@ -63,24 +63,24 @@ void iprange_af_mismatch(void)
  *
  * So we allow the following formats (excluding varlena header):
  *
- *  0 bytes                  - special 'match all' range (af==0)
- *  8 bytes                  - IP4R
- *  1 byte pfxlen + 8 bytes  - IP6R cidr range /64 or shorter
- *  1 byte pfxlen + 16 bytes - IP6R cidr range /65 or longer
- *  32 bytes                 - arbitrary IP6R range
+ *	0 bytes					 - special 'match all' range (af==0)
+ *	8 bytes					 - IP4R
+ *	1 byte pfxlen + 8 bytes	 - IP6R cidr range /64 or shorter
+ *	1 byte pfxlen + 16 bytes - IP6R cidr range /65 or longer
+ *	32 bytes				 - arbitrary IP6R range
  */
 
 int ipr_unpack(IPR_P in, IPR *out)
 {
 	unsigned char *ptr = (unsigned char *) VARDATA_ANY(in);
 
-    switch (VARSIZE_ANY_EXHDR(in))
-    {
+	switch (VARSIZE_ANY_EXHDR(in))
+	{
 		case 0:
 			return 0;
 
-        case sizeof(IP4R):
-            memcpy(&out->ip4r, ptr, sizeof(IP4R));
+		case sizeof(IP4R):
+			memcpy(&out->ip4r, ptr, sizeof(IP4R));
 			return PGSQL_AF_INET;
 
 		case 1+sizeof(uint64):
@@ -102,18 +102,18 @@ int ipr_unpack(IPR_P in, IPR *out)
 			return PGSQL_AF_INET6;
 		}
 
-        case sizeof(IP6R):
-            memcpy(&out->ip6r, ptr, sizeof(IP6R));
+		case sizeof(IP6R):
+			memcpy(&out->ip6r, ptr, sizeof(IP6R));
 			return PGSQL_AF_INET6;
 
-        default:
+		default:
 			iprange_internal_error();
-    }
+	}
 }
 
 IPR_P ipr_pack(int af, IPR *val)
 {
-    IPR_P out = palloc(VARHDRSZ + sizeof(IP6R));
+	IPR_P out = palloc(VARHDRSZ + sizeof(IP6R));
 	unsigned char *ptr = (unsigned char *) VARDATA(out);
 
 	switch (af)
@@ -172,8 +172,8 @@ PG_FUNCTION_INFO_V1(iprange_in);
 Datum
 iprange_in(PG_FUNCTION_ARGS)
 {
-    char *str = PG_GETARG_CSTRING(0);
-    IPR ipr;
+	char *str = PG_GETARG_CSTRING(0);
+	IPR ipr;
 
 	if (str[0] == '-' && str[1] == 0)
 	{
@@ -229,8 +229,8 @@ PG_FUNCTION_INFO_V1(iprange_recv);
 Datum
 iprange_recv(PG_FUNCTION_ARGS)
 {
-    StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
-    IPR ipr;
+	StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
+	IPR ipr;
 	unsigned af, bits, nbytes;
 
 	/*
@@ -254,12 +254,12 @@ iprange_recv(PG_FUNCTION_ARGS)
 		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
-	(void) pq_getmsgbyte(buf);  /* ignore flag */
+	(void) pq_getmsgbyte(buf);	/* ignore flag */
 	nbytes = pq_getmsgbyte(buf);
 
 	switch (af)
 	{
-		case 0:  /* special 'match all' range */
+		case 0:	 /* special 'match all' range */
 			if (nbytes == 0)
 				PG_RETURN_IPR_P(ipr_pack(0,NULL));
 			break;
@@ -328,10 +328,10 @@ PG_FUNCTION_INFO_V1(iprange_send);
 Datum
 iprange_send(PG_FUNCTION_ARGS)
 {
-    IPR_P *iprp = PG_GETARG_IPR_P(0);
+	IPR_P *iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp, &ipr);
-    StringInfoData buf;
+	StringInfoData buf;
 	unsigned bits = ~0;
 
 	switch (af)
@@ -344,7 +344,7 @@ iprange_send(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    pq_begintypsend(&buf);
+	pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
 	pq_sendbyte(&buf, (int8) bits);
 	pq_sendbyte(&buf, 1);
@@ -392,7 +392,7 @@ iprange_send(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
+	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
 /* Unfortunately due to a historical oversight, this function produces
@@ -411,9 +411,9 @@ PG_FUNCTION_INFO_V1(iprange_hash);
 Datum
 iprange_hash(PG_FUNCTION_ARGS)
 {
-    IPR_P arg1 = PG_GETARG_IPR_P(0);
+	IPR_P arg1 = PG_GETARG_IPR_P(0);
 
-    return hash_any((void *) VARDATA_ANY(arg1), VARSIZE_ANY_EXHDR(arg1));
+	return hash_any((void *) VARDATA_ANY(arg1), VARSIZE_ANY_EXHDR(arg1));
 }
 
 /* below are the fixed hash functions
@@ -423,7 +423,7 @@ PG_FUNCTION_INFO_V1(iprange_hash_new);
 Datum
 iprange_hash_new(PG_FUNCTION_ARGS)
 {
-    IPR_P arg1 = PG_GETARG_IPR_P(0);
+	IPR_P arg1 = PG_GETARG_IPR_P(0);
 	IPR tmp;
 	uint32 vsize = VARSIZE_ANY_EXHDR(arg1);
 
@@ -440,7 +440,7 @@ PG_FUNCTION_INFO_V1(iprange_hash_extended);
 Datum
 iprange_hash_extended(PG_FUNCTION_ARGS)
 {
-    IPR_P arg1 = PG_GETARG_IPR_P(0);
+	IPR_P arg1 = PG_GETARG_IPR_P(0);
 	IPR tmp;
 	uint32 vsize = VARSIZE_ANY_EXHDR(arg1);
 	uint32 seed = DatumGetUInt32(PG_GETARG_DATUM(1));
@@ -458,7 +458,7 @@ PG_FUNCTION_INFO_V1(iprange_cast_to_text);
 Datum
 iprange_cast_to_text(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 
@@ -485,16 +485,16 @@ PG_FUNCTION_INFO_V1(iprange_cast_from_text);
 Datum
 iprange_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_PP(0);
-    int tlen = VARSIZE_ANY_EXHDR(txt);
-    char buf[IP6R_STRING_MAX];
+	text *txt = PG_GETARG_TEXT_PP(0);
+	int tlen = VARSIZE_ANY_EXHDR(txt);
+	char buf[IP6R_STRING_MAX];
 	LOCAL_FCINFO(fc, 3);
 	Datum res;
 
-    if (tlen < sizeof(buf))
-    {
-        memcpy(buf, VARDATA_ANY(txt), tlen);
-        buf[tlen] = 0;
+	if (tlen < sizeof(buf))
+	{
+		memcpy(buf, VARDATA_ANY(txt), tlen);
+		buf[tlen] = 0;
 
 		InitFunctionCallInfoData(*fc, NULL, 1, fcinfo->fncollation, fcinfo->context, NULL);
 		LFCI_ARG_VALUE(fc, 0) = CStringGetDatum(buf);
@@ -503,23 +503,23 @@ iprange_cast_from_text(PG_FUNCTION_ARGS)
 		res = iprange_in(fc);
 		fcinfo->isnull = fc->isnull;
 		return res;
-    }
+	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IPR value in text")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IPR value in text")));
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_from_cidr);
 Datum
 iprange_cast_from_cidr(PG_FUNCTION_ARGS)
 {
-    inet *inetptr = PG_GETARG_INET_P(0);
-    inet_struct *in = INET_STRUCT_DATA(inetptr);
+	inet *inetptr = PG_GETARG_INET_P(0);
+	inet_struct *in = INET_STRUCT_DATA(inetptr);
 	unsigned char *p = in->ipaddr;
 	IPR ipr;
 
-    if (in->bits <= ipr_af_maxbits(in->family))
+	if (in->bits <= ipr_af_maxbits(in->family))
 	{
 		switch (in->family)
 		{
@@ -557,20 +557,20 @@ iprange_cast_from_cidr(PG_FUNCTION_ARGS)
 		}
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid CIDR value for conversion to IPR")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid CIDR value for conversion to IPR")));
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_to_cidr);
 Datum
 iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp, &ipr);
-    inet *res;
-    inet_struct *in;
+	inet *res;
+	inet_struct *in;
 	unsigned bits;
 
 	switch (af)
@@ -595,7 +595,7 @@ iprange_cast_to_cidr(PG_FUNCTION_ARGS)
 				p[0] = (ip >> 24);
 				p[1] = (ip >> 16);
 				p[2] = (ip >>  8);
-				p[3] = (ip      );
+				p[3] = (ip		);
 			}
 
 			PG_RETURN_INET_P(res);
@@ -644,39 +644,39 @@ PG_FUNCTION_INFO_V1(iprange_cast_from_ip4);
 Datum
 iprange_cast_from_ip4(PG_FUNCTION_ARGS)
 {
-    IP4 ip = PG_GETARG_IP4(0);
+	IP4 ip = PG_GETARG_IP4(0);
 	IPR res;
 
-    if (ip4r_from_inet(ip, 32, &res.ip4r))
-        PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET, &res));
+	if (ip4r_from_inet(ip, 32, &res.ip4r))
+		PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET, &res));
 
-    ereport(ERROR,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP4 value for conversion to IPR (shouldn't be possible)")));
-    PG_RETURN_NULL();
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP4 value for conversion to IPR (shouldn't be possible)")));
+	PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_from_ip6);
 Datum
 iprange_cast_from_ip6(PG_FUNCTION_ARGS)
 {
-    IP6 *ip = PG_GETARG_IP6_P(0);
+	IP6 *ip = PG_GETARG_IP6_P(0);
 	IPR res;
 
-    if (ip6r_from_inet(ip, 128, &res.ip6r))
-        PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6, &res));
+	if (ip6r_from_inet(ip, 128, &res.ip6r))
+		PG_RETURN_IPR_P(ipr_pack(PGSQL_AF_INET6, &res));
 
-    ereport(ERROR,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP6 value for conversion to IPR (shouldn't be possible)")));
-    PG_RETURN_NULL();
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP6 value for conversion to IPR (shouldn't be possible)")));
+	PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_from_ipaddr);
 Datum
 iprange_cast_from_ipaddr(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
+	IP_P ipp = PG_GETARG_IP_P(0);
 	IP ip;
 	IPR res;
 	int af = ip_unpack(ipp, &ip);
@@ -694,17 +694,17 @@ iprange_cast_from_ipaddr(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    ereport(ERROR,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP6 value for conversion to IPR (shouldn't be possible)")));
-    PG_RETURN_NULL();
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP6 value for conversion to IPR (shouldn't be possible)")));
+	PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_cast_from_ip4r);
 Datum
 iprange_cast_from_ip4r(PG_FUNCTION_ARGS)
 {
-    IP4R *ipr = PG_GETARG_IP4R_P(0);
+	IP4R *ipr = PG_GETARG_IP4R_P(0);
 	IPR res;
 
 	res.ip4r = *ipr;
@@ -715,7 +715,7 @@ PG_FUNCTION_INFO_V1(iprange_cast_from_ip6r);
 Datum
 iprange_cast_from_ip6r(PG_FUNCTION_ARGS)
 {
-    IP6R *ipr = PG_GETARG_IP6R_P(0);
+	IP6R *ipr = PG_GETARG_IP6R_P(0);
 	IPR res;
 
 	res.ip6r = *ipr;
@@ -726,7 +726,7 @@ PG_FUNCTION_INFO_V1(iprange_cast_to_ip4r);
 Datum
 iprange_cast_to_ip4r(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 	IP4R *res;
@@ -746,7 +746,7 @@ PG_FUNCTION_INFO_V1(iprange_cast_to_ip6r);
 Datum
 iprange_cast_to_ip6r(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 	IP6R *res;
@@ -766,7 +766,7 @@ PG_FUNCTION_INFO_V1(iprange_cast_to_bit);
 Datum
 iprange_cast_to_bit(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp, &ipr);
 	unsigned bits;
@@ -788,8 +788,8 @@ iprange_cast_to_bit(PG_FUNCTION_ARGS)
 				IP4 ip = ipr.ip4r.lower;
 				buf[0] = (ip >> 24);
 				buf[1] = (ip >> 16);
-				buf[2] = (ip >>  8);
-				buf[3] = (ip      );
+				buf[2] = (ip >>	 8);
+				buf[3] = (ip	  );
 			}
 			break;
 
@@ -846,8 +846,8 @@ PG_FUNCTION_INFO_V1(iprange_from_ip4s);
 Datum
 iprange_from_ip4s(PG_FUNCTION_ARGS)
 {
-    IP4 a = PG_GETARG_IP4(0);
-    IP4 b = PG_GETARG_IP4(1);
+	IP4 a = PG_GETARG_IP4(0);
+	IP4 b = PG_GETARG_IP4(1);
 
 	PG_RETURN_DATUM(iprange_from_ipaddrs_internal(PGSQL_AF_INET, a, b, NULL, NULL));
 }
@@ -856,8 +856,8 @@ PG_FUNCTION_INFO_V1(iprange_from_ip6s);
 Datum
 iprange_from_ip6s(PG_FUNCTION_ARGS)
 {
-    IP6 *a = PG_GETARG_IP6_P(0);
-    IP6 *b = PG_GETARG_IP6_P(1);
+	IP6 *a = PG_GETARG_IP6_P(0);
+	IP6 *b = PG_GETARG_IP6_P(1);
 
 	PG_RETURN_DATUM(iprange_from_ipaddrs_internal(PGSQL_AF_INET6, 0, 0, a, b));
 }
@@ -866,8 +866,8 @@ PG_FUNCTION_INFO_V1(iprange_from_ipaddrs);
 Datum
 iprange_from_ipaddrs(PG_FUNCTION_ARGS)
 {
-    IP_P ap = PG_GETARG_IP_P(0);
-    IP_P bp = PG_GETARG_IP_P(1);
+	IP_P ap = PG_GETARG_IP_P(0);
+	IP_P bp = PG_GETARG_IP_P(1);
 	IP a,b;
 	int af_a = ip_unpack(ap,&a);
 	int af_b = ip_unpack(bp,&b);
@@ -884,12 +884,12 @@ iprange_net_prefix_internal(int af, IP4 ip4, IP6 *ip6, int pfxlen)
 {
 	IPR res;
 
-    if (pfxlen < 0 || pfxlen > ipr_af_maxbits(af))
-    {
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("prefix length out of range")));
-    }
+	if (pfxlen < 0 || pfxlen > ipr_af_maxbits(af))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("prefix length out of range")));
+	}
 
 	switch (af)
 	{
@@ -910,8 +910,8 @@ PG_FUNCTION_INFO_V1(iprange_net_prefix_ip4);
 Datum
 iprange_net_prefix_ip4(PG_FUNCTION_ARGS)
 {
-    IP4 ip = PG_GETARG_IP4(0);
-    int pfxlen = PG_GETARG_INT32(1);
+	IP4 ip = PG_GETARG_IP4(0);
+	int pfxlen = PG_GETARG_INT32(1);
 
 	PG_RETURN_DATUM(iprange_net_prefix_internal(PGSQL_AF_INET, ip, NULL, pfxlen));
 }
@@ -920,8 +920,8 @@ PG_FUNCTION_INFO_V1(iprange_net_prefix_ip6);
 Datum
 iprange_net_prefix_ip6(PG_FUNCTION_ARGS)
 {
-    IP6 *ip = PG_GETARG_IP6_P(0);
-    int pfxlen = PG_GETARG_INT32(1);
+	IP6 *ip = PG_GETARG_IP6_P(0);
+	int pfxlen = PG_GETARG_INT32(1);
 
 	PG_RETURN_DATUM(iprange_net_prefix_internal(PGSQL_AF_INET6, 0, ip, pfxlen));
 }
@@ -930,9 +930,9 @@ PG_FUNCTION_INFO_V1(iprange_net_prefix);
 Datum
 iprange_net_prefix(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
+	IP_P ipp = PG_GETARG_IP_P(0);
 	IP ip;
-    int pfxlen = PG_GETARG_INT32(1);
+	int pfxlen = PG_GETARG_INT32(1);
 	int af = ip_unpack(ipp,&ip);
 
 	PG_RETURN_DATUM(iprange_net_prefix_internal(af, ip.ip4, &ip.ip6, pfxlen));
@@ -976,8 +976,8 @@ PG_FUNCTION_INFO_V1(iprange_net_mask_ip4);
 Datum
 iprange_net_mask_ip4(PG_FUNCTION_ARGS)
 {
-    IP4 ip = PG_GETARG_IP4(0);
-    IP4 mask = PG_GETARG_IP4(1);
+	IP4 ip = PG_GETARG_IP4(0);
+	IP4 mask = PG_GETARG_IP4(1);
 
 	PG_RETURN_DATUM(iprange_net_mask_internal(PGSQL_AF_INET, ip, NULL, mask, NULL));
 }
@@ -986,8 +986,8 @@ PG_FUNCTION_INFO_V1(iprange_net_mask_ip6);
 Datum
 iprange_net_mask_ip6(PG_FUNCTION_ARGS)
 {
-    IP6 *ip = PG_GETARG_IP6_P(0);
-    IP6 *mask = PG_GETARG_IP6_P(1);
+	IP6 *ip = PG_GETARG_IP6_P(0);
+	IP6 *mask = PG_GETARG_IP6_P(1);
 
 	PG_RETURN_DATUM(iprange_net_mask_internal(PGSQL_AF_INET6, 0, ip, 0, mask));
 }
@@ -996,8 +996,8 @@ PG_FUNCTION_INFO_V1(iprange_net_mask);
 Datum
 iprange_net_mask(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
-    IP_P maskp = PG_GETARG_IP_P(1);
+	IP_P ipp = PG_GETARG_IP_P(0);
+	IP_P maskp = PG_GETARG_IP_P(1);
 	IP ip XINIT(IP_INITIALIZER);
 	IP mask XINIT(IP_INITIALIZER);
 	int af1 = ip_unpack(ipp,&ip);
@@ -1013,7 +1013,7 @@ PG_FUNCTION_INFO_V1(iprange_lower);
 Datum
 iprange_lower(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	IP ip;
 	int af = ipr_unpack(iprp,&ipr);
@@ -1041,7 +1041,7 @@ PG_FUNCTION_INFO_V1(iprange_upper);
 Datum
 iprange_upper(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	IP ip;
 	int af = ipr_unpack(iprp,&ipr);
@@ -1069,7 +1069,7 @@ PG_FUNCTION_INFO_V1(iprange_is_cidr);
 Datum
 iprange_is_cidr(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 
@@ -1093,7 +1093,7 @@ PG_FUNCTION_INFO_V1(iprange_family);
 Datum
 iprange_family(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 
@@ -1165,7 +1165,7 @@ iprange_cidr_split(PG_FUNCTION_ARGS)
 			}
 			else
 			{
-				funcctx->user_fctx = NULL;  /* this is the last row */
+				funcctx->user_fctx = NULL;	/* this is the last row */
 				res.ip6r.lower.bits[0] = netmask6_hi(0);
 				res.ip6r.lower.bits[1] = netmask6_lo(0);
 				res.ip6r.upper.bits[0] = hostmask6_hi(0);
@@ -1243,49 +1243,49 @@ iprange_cmp_internal(Datum d1, Datum d2)
 	if ((Pointer)ipp2 != DatumGetPointer(d2))
 		pfree(ipp2);
 
-    return retval;
+	return retval;
 }
 
 PG_FUNCTION_INFO_V1(iprange_lt);
 Datum
 iprange_lt(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) < 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) < 0 );
 }
 
 PG_FUNCTION_INFO_V1(iprange_le);
 Datum
 iprange_le(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) <= 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) <= 0 );
 }
 
 PG_FUNCTION_INFO_V1(iprange_gt);
 Datum
 iprange_gt(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) > 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) > 0 );
 }
 
 PG_FUNCTION_INFO_V1(iprange_ge);
 Datum
 iprange_ge(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) >= 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) >= 0 );
 }
 
 PG_FUNCTION_INFO_V1(iprange_eq);
 Datum
 iprange_eq(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) == 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) == 0 );
 }
 
 PG_FUNCTION_INFO_V1(iprange_neq);
 Datum
 iprange_neq(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) != 0 );
+	PG_RETURN_BOOL( iprange_cmp_internal(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1)) != 0 );
 }
 
 static bool
@@ -1327,7 +1327,7 @@ iprange_overlaps_internal(Datum d1, Datum d2)
 	if ((Pointer)ipp2 != DatumGetPointer(d2))
 		pfree(ipp2);
 
-    return retval;
+	return retval;
 }
 
 static int
@@ -1369,7 +1369,7 @@ iprange_contains_internal(Datum d1, Datum d2, bool eqval)
 	if ((Pointer)ipp2 != DatumGetPointer(d2))
 		pfree(ipp2);
 
-    return retval;
+	return retval;
 }
 
 static int
@@ -1406,14 +1406,14 @@ iprange_contains_ip_internal(Datum d1, int af2, IP4 ip4, IP6 *ip6)
 	if ((Pointer)ipp1 != DatumGetPointer(d1))
 		pfree(ipp1);
 
-    return retval;
+	return retval;
 }
 
 PG_FUNCTION_INFO_V1(iprange_overlaps);
 Datum
 iprange_overlaps(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_overlaps_internal(PG_GETARG_DATUM(0),
+	PG_RETURN_BOOL( iprange_overlaps_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1)) );
 }
 
@@ -1421,7 +1421,7 @@ PG_FUNCTION_INFO_V1(iprange_contains);
 Datum
 iprange_contains(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
+	PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1),
 										  true) );
 }
@@ -1430,7 +1430,7 @@ PG_FUNCTION_INFO_V1(iprange_contains_strict);
 Datum
 iprange_contains_strict(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
+	PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(0),
 										  PG_GETARG_DATUM(1),
 										  false) );
 }
@@ -1439,7 +1439,7 @@ PG_FUNCTION_INFO_V1(iprange_contained_by);
 Datum
 iprange_contained_by(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
+	PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
 										  PG_GETARG_DATUM(0),
 										  true) );
 }
@@ -1448,7 +1448,7 @@ PG_FUNCTION_INFO_V1(iprange_contained_by_strict);
 Datum
 iprange_contained_by_strict(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
+	PG_RETURN_BOOL( iprange_contains_internal(PG_GETARG_DATUM(1),
 										  PG_GETARG_DATUM(0),
 										  false) );
 }
@@ -1487,7 +1487,7 @@ Datum
 iprange_ip6_contained_by(PG_FUNCTION_ARGS)
 {
 	IP6 *ip = PG_GETARG_IP6_P(0);
-    PG_RETURN_BOOL( iprange_contains_ip_internal(PG_GETARG_DATUM(1), PGSQL_AF_INET6, 0, ip) );
+	PG_RETURN_BOOL( iprange_contains_ip_internal(PG_GETARG_DATUM(1), PGSQL_AF_INET6, 0, ip) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_ip4_contained_by);
@@ -1495,7 +1495,7 @@ Datum
 iprange_ip4_contained_by(PG_FUNCTION_ARGS)
 {
 	IP4 ip = PG_GETARG_IP4(0);
-    PG_RETURN_BOOL( iprange_contains_ip_internal(PG_GETARG_DATUM(1), PGSQL_AF_INET, ip, NULL) );
+	PG_RETURN_BOOL( iprange_contains_ip_internal(PG_GETARG_DATUM(1), PGSQL_AF_INET, ip, NULL) );
 }
 
 PG_FUNCTION_INFO_V1(iprange_ip_contained_by);
@@ -1584,7 +1584,7 @@ iprange_inter(PG_FUNCTION_ARGS)
 	else if (af2 == 0)
 		PG_RETURN_IPR_P(ipr_pack(af1,&ipr1));
 
-    PG_RETURN_NULL();
+	PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(iprange_size);
@@ -1649,7 +1649,7 @@ PG_FUNCTION_INFO_V1(iprange_prefixlen);
 Datum
 iprange_prefixlen(PG_FUNCTION_ARGS)
 {
-    IPR_P iprp = PG_GETARG_IPR_P(0);
+	IPR_P iprp = PG_GETARG_IPR_P(0);
 	IPR ipr;
 	int af = ipr_unpack(iprp,&ipr);
 	unsigned len = ~0;
@@ -1668,7 +1668,7 @@ iprange_prefixlen(PG_FUNCTION_ARGS)
 
 
 /*****************************************************************************
- *                                                 Btree functions
+ *												   Btree functions
  *****************************************************************************/
 
 PG_FUNCTION_INFO_V1(iprange_cmp);
@@ -1680,7 +1680,7 @@ iprange_cmp(PG_FUNCTION_ARGS)
 
 
 /*****************************************************************************
- *                                                 GiST functions
+ *												   GiST functions
  *****************************************************************************/
 
 /*
@@ -1717,7 +1717,7 @@ PG_FUNCTION_INFO_V1(gipr_compress);
 Datum
 gipr_compress(PG_FUNCTION_ARGS)
 {
-    GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
+	GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY *retval = entry;
 
 	if (!entry->leafkey)
@@ -1741,7 +1741,7 @@ PG_FUNCTION_INFO_V1(gipr_decompress);
 Datum
 gipr_decompress(PG_FUNCTION_ARGS)
 {
-    GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
+	GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY *retval = palloc(sizeof(GISTENTRY));
 	IPR_KEY *key = palloc(sizeof(IPR_KEY));
 
@@ -1752,14 +1752,14 @@ gipr_decompress(PG_FUNCTION_ARGS)
 				  entry->rel, entry->page,
 				  entry->offset, false);
 
-    PG_RETURN_POINTER(retval);
+	PG_RETURN_POINTER(retval);
 }
 
 PG_FUNCTION_INFO_V1(gipr_fetch);
 Datum
 gipr_fetch(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_POINTER(PG_GETARG_POINTER(0));
+	PG_RETURN_POINTER(PG_GETARG_POINTER(0));
 }
 
 
@@ -1774,28 +1774,28 @@ PG_FUNCTION_INFO_V1(gipr_consistent);
 Datum
 gipr_consistent(PG_FUNCTION_ARGS)
 {
-    GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
-    IPR_P query = (IPR_P) PG_GETARG_POINTER(1);
-    StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
-    bool *recheck = (bool *) PG_GETARG_POINTER(4);
-    IPR_KEY *key = (IPR_KEY *) DatumGetPointer(entry->key);
-    bool retval;
+	GISTENTRY *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
+	IPR_P query = (IPR_P) PG_GETARG_POINTER(1);
+	StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
+	bool *recheck = (bool *) PG_GETARG_POINTER(4);
+	IPR_KEY *key = (IPR_KEY *) DatumGetPointer(entry->key);
+	bool retval;
 
-    /* recheck is never needed with this type */
-    if (recheck)
-        *recheck = false;
+	/* recheck is never needed with this type */
+	if (recheck)
+		*recheck = false;
 
-    /*
-     * * if entry is not leaf, use gipr_internal_consistent, * else use
-     * gipr_leaf_consistent
-     */
+	/*
+	 * * if entry is not leaf, use gipr_internal_consistent, * else use
+	 * gipr_leaf_consistent
+	 */
 
-    if (GIST_LEAF(entry))
-        retval = gipr_leaf_consistent(key, query, strategy);
-    else
-        retval = gipr_internal_consistent(key, query, strategy);
+	if (GIST_LEAF(entry))
+		retval = gipr_leaf_consistent(key, query, strategy);
+	else
+		retval = gipr_internal_consistent(key, query, strategy);
 
-    PG_RETURN_BOOL(retval);
+	PG_RETURN_BOOL(retval);
 }
 
 /*
@@ -1846,7 +1846,7 @@ gipr_union_internal(IPR_KEY *out, bool *allequalp, bool *afequalp,
 	bool afequal = true;
 	IPR_KEY *tmp;
 
-    tmp = (IPR_KEY *) DatumGetPointer(ent[0].key);
+	tmp = (IPR_KEY *) DatumGetPointer(ent[0].key);
 	*out = *tmp;
 
 	for (i = 1; out->af != 0 && i < numranges; ++i)
@@ -1919,23 +1919,23 @@ PG_FUNCTION_INFO_V1(gipr_union);
 Datum
 gipr_union(PG_FUNCTION_ARGS)
 {
-    GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
-    int *sizep = (int *) PG_GETARG_POINTER(1);
-    GISTENTRY *ent = GISTENTRYVEC(entryvec);
-    int numranges;
+	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
+	int *sizep = (int *) PG_GETARG_POINTER(1);
+	GISTENTRY *ent = GISTENTRYVEC(entryvec);
+	int numranges;
 	IPR_KEY *out = palloc(sizeof(IPR_KEY));
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "union\n");
+	fprintf(stderr, "union\n");
 #endif
 
-    numranges = GISTENTRYCOUNT(entryvec);
+	numranges = GISTENTRYCOUNT(entryvec);
 
 	gipr_union_internal(out, NULL, NULL, ent, numranges);
 
 	*sizep = sizeof(IPR_KEY);
 
-    PG_RETURN_POINTER(out);
+	PG_RETURN_POINTER(out);
 }
 
 
@@ -1947,13 +1947,13 @@ PG_FUNCTION_INFO_V1(gipr_penalty);
 Datum
 gipr_penalty(PG_FUNCTION_ARGS)
 {
-    GISTENTRY *origentry = (GISTENTRY *) PG_GETARG_POINTER(0);
-    GISTENTRY *newentry = (GISTENTRY *) PG_GETARG_POINTER(1);
-    float *result = (float *) PG_GETARG_POINTER(2);
-    IPR_KEY *key = (IPR_KEY *) DatumGetPointer(origentry->key);
-    IPR_KEY *newkey = (IPR_KEY *) DatumGetPointer(newentry->key);
-    IP4R ud4;
-    IP6R ud6;
+	GISTENTRY *origentry = (GISTENTRY *) PG_GETARG_POINTER(0);
+	GISTENTRY *newentry = (GISTENTRY *) PG_GETARG_POINTER(1);
+	float *result = (float *) PG_GETARG_POINTER(2);
+	IPR_KEY *key = (IPR_KEY *) DatumGetPointer(origentry->key);
+	IPR_KEY *newkey = (IPR_KEY *) DatumGetPointer(newentry->key);
+	IP4R ud4;
+	IP6R ud6;
 	double tmp = 0.0;
 
 	if (key->af != newkey->af)
@@ -2027,11 +2027,11 @@ gipr_penalty(PG_FUNCTION_ARGS)
 	*result = (float) tmp;
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "penalty\n");
-    fprintf(stderr, "\t%g\n", *result);
+	fprintf(stderr, "penalty\n");
+	fprintf(stderr, "\t%g\n", *result);
 #endif
 
-    PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(result);
 }
 
 
@@ -2042,8 +2042,8 @@ gipr_penalty(PG_FUNCTION_ARGS)
 
 struct gipr_sort
 {
-    IPR_KEY *key;
-    OffsetNumber pos;
+	IPR_KEY *key;
+	OffsetNumber pos;
 };
 
 static int
@@ -2076,41 +2076,41 @@ PG_FUNCTION_INFO_V1(gipr_picksplit);
 Datum
 gipr_picksplit(PG_FUNCTION_ARGS)
 {
-    GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
-    GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
-    GISTENTRY *ent = GISTENTRYVEC(entryvec);
-    OffsetNumber i;
-    int nbytes;
-    OffsetNumber maxoff;
-    OffsetNumber *listL;
-    OffsetNumber *listR;
-    bool allisequal = true;
-    bool allafequal = true;
-    IPR_KEY pageunion;
-    IPR_KEY *cur;
-    IPR_KEY *unionL;
-    IPR_KEY *unionR;
-    int posL = 0;
-    int posR = 0;
+	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
+	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
+	GISTENTRY *ent = GISTENTRYVEC(entryvec);
+	OffsetNumber i;
+	int nbytes;
+	OffsetNumber maxoff;
+	OffsetNumber *listL;
+	OffsetNumber *listR;
+	bool allisequal = true;
+	bool allafequal = true;
+	IPR_KEY pageunion;
+	IPR_KEY *cur;
+	IPR_KEY *unionL;
+	IPR_KEY *unionR;
+	int posL = 0;
+	int posR = 0;
 
-    posL = posR = 0;
-    maxoff = GISTENTRYCOUNT(entryvec) - 1;
+	posL = posR = 0;
+	maxoff = GISTENTRYCOUNT(entryvec) - 1;
 
 	gipr_union_internal(&pageunion, &allisequal, &allafequal,
 						&ent[FirstOffsetNumber], maxoff);
 
-    nbytes = (maxoff + 2) * sizeof(OffsetNumber);
-    listL = (OffsetNumber *) palloc(nbytes);
-    listR = (OffsetNumber *) palloc(nbytes);
-    unionL = palloc(sizeof(IPR_KEY));
-    unionR = palloc(sizeof(IPR_KEY));
-    v->spl_ldatum = PointerGetDatum(unionL);
-    v->spl_rdatum = PointerGetDatum(unionR);
-    v->spl_left = listL;
-    v->spl_right = listR;
+	nbytes = (maxoff + 2) * sizeof(OffsetNumber);
+	listL = (OffsetNumber *) palloc(nbytes);
+	listR = (OffsetNumber *) palloc(nbytes);
+	unionL = palloc(sizeof(IPR_KEY));
+	unionR = palloc(sizeof(IPR_KEY));
+	v->spl_ldatum = PointerGetDatum(unionL);
+	v->spl_rdatum = PointerGetDatum(unionR);
+	v->spl_left = listL;
+	v->spl_right = listR;
 
-    if (allisequal)
-    {
+	if (allisequal)
+	{
 		OffsetNumber split_at = FirstOffsetNumber + (maxoff - FirstOffsetNumber + 1)/2;
 		v->spl_nleft = v->spl_nright = 0;
 		*unionL = pageunion;
@@ -2122,7 +2122,7 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 			v->spl_right[v->spl_nright++] = i;
 
 		PG_RETURN_POINTER(v);
-    }
+	}
 
 	/*
 	 * if we have a mix of address families present, then we split by AF regardless
@@ -2133,12 +2133,12 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 	 */
 
 #define ADDLIST( list_, u_, pos_, num_ ) do { \
-        if ( pos_ ) { \
+		if ( pos_ ) { \
 			gipr_union_internal_1(u_, cur); \
-        } else { \
-                *(u_) = *(cur); \
-        } \
-        (list_)[(pos_)++] = (num_); \
+		} else { \
+				*(u_) = *(cur); \
+		} \
+		(list_)[(pos_)++] = (num_); \
 } while(0)
 
 	if (!allafequal)
@@ -2190,26 +2190,26 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 		}
 	}
 
-    /* bad disposition, sort by ascending size and resplit */
-    if (posR == 0 || posL == 0)
-    {
-        struct gipr_sort *arr = (struct gipr_sort *)
-            palloc(sizeof(struct gipr_sort) * (maxoff + FirstOffsetNumber));
+	/* bad disposition, sort by ascending size and resplit */
+	if (posR == 0 || posL == 0)
+	{
+		struct gipr_sort *arr = (struct gipr_sort *)
+			palloc(sizeof(struct gipr_sort) * (maxoff + FirstOffsetNumber));
 
 		Assert(allafequal);
 
-        for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
-        {
-            arr[i].key = (IPR_KEY *) DatumGetPointer(ent[i].key);
-            arr[i].pos = i;
-        }
+		for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
+		{
+			arr[i].key = (IPR_KEY *) DatumGetPointer(ent[i].key);
+			arr[i].pos = i;
+		}
 
-        qsort(arr + FirstOffsetNumber,
-              maxoff - FirstOffsetNumber + 1,
-              sizeof(struct gipr_sort),
+		qsort(arr + FirstOffsetNumber,
+			  maxoff - FirstOffsetNumber + 1,
+			  sizeof(struct gipr_sort),
 			  (pageunion.af == PGSQL_AF_INET6) ? gipr_sort_compare_v6 : gipr_sort_compare_v4);
 
-        posL = posR = 0;
+		posL = posR = 0;
 
 		for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 		{
@@ -2245,13 +2245,13 @@ gipr_picksplit(PG_FUNCTION_ARGS)
 			}
 		}
 
-        pfree(arr);
-    }
+		pfree(arr);
+	}
 
-    v->spl_nleft = posL;
-    v->spl_nright = posR;
+	v->spl_nleft = posL;
+	v->spl_nright = posR;
 
-    PG_RETURN_POINTER(v);
+	PG_RETURN_POINTER(v);
 }
 
 #undef ADDLIST
@@ -2263,9 +2263,9 @@ PG_FUNCTION_INFO_V1(gipr_same);
 Datum
 gipr_same(PG_FUNCTION_ARGS)
 {
-    IPR_KEY *v1 = (IPR_KEY *) PG_GETARG_POINTER(0);
-    IPR_KEY *v2 = (IPR_KEY *) PG_GETARG_POINTER(1);
-    bool *result = (bool *) PG_GETARG_POINTER(2);
+	IPR_KEY *v1 = (IPR_KEY *) PG_GETARG_POINTER(0);
+	IPR_KEY *v2 = (IPR_KEY *) PG_GETARG_POINTER(1);
+	bool *result = (bool *) PG_GETARG_POINTER(2);
 
 	if (!v1 || !v2)
 		*result = (v1 == NULL && v2 == NULL);
@@ -2290,21 +2290,21 @@ gipr_same(PG_FUNCTION_ARGS)
 	}
 
 #ifdef GIST_DEBUG
-    fprintf(stderr, "same: %s\n", (*result ? "true" : "false"));
+	fprintf(stderr, "same: %s\n", (*result ? "true" : "false"));
 #endif
 
-    PG_RETURN_POINTER(result);
+	PG_RETURN_POINTER(result);
 }
 
 
 /*
  * Strategy numbers:
- *      OPERATOR        1       >>= ,
- *      OPERATOR        2       <<= ,
- *      OPERATOR        3       >> ,
- *      OPERATOR        4       << ,
- *      OPERATOR        5       && ,
- *      OPERATOR        6       = ,
+ *		OPERATOR		1		>>= ,
+ *		OPERATOR		2		<<= ,
+ *		OPERATOR		3		>> ,
+ *		OPERATOR		4		<< ,
+ *		OPERATOR		5		&& ,
+ *		OPERATOR		6		= ,
  */
 
 /*
@@ -2320,42 +2320,42 @@ gipr_leaf_consistent(IPR_KEY *key,
 	int af = ipr_unpack(queryp, &query);
 
 #ifdef GIST_QUERY_DEBUG
-    fprintf(stderr, "leaf_consistent, %d\n", strategy);
+	fprintf(stderr, "leaf_consistent, %d\n", strategy);
 #endif
 
 	if (key->af == 0)
 	{
 		switch (strategy)
 		{
-			case 1:   /* left contains right nonstrict */
+			case 1:	  /* left contains right nonstrict */
 				return true;
-			case 2:   /* left contained in right nonstrict */
+			case 2:	  /* left contained in right nonstrict */
 				return (af == 0);
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return !(af == 0);
-			case 4:   /* left contained in right strict */
+			case 4:	  /* left contained in right strict */
 				return false;
-			case 5:   /* left overlaps right */
+			case 5:	  /* left overlaps right */
 				return true;
-			case 6:   /* left equal right */
+			case 6:	  /* left equal right */
 				return (af == 0);
 		}
-    }
+	}
 	else if (af == 0)
 	{
 		switch (strategy)
 		{
-			case 1:   /* left contains right nonstrict */
+			case 1:	  /* left contains right nonstrict */
 				return false;
-			case 2:   /* left contained in right nonstrict */
+			case 2:	  /* left contained in right nonstrict */
 				return true;
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return false;
-			case 4:   /* left contained in right strict */
+			case 4:	  /* left contained in right strict */
 				return true;
-			case 5:   /* left overlaps right */
+			case 5:	  /* left overlaps right */
 				return true;
-			case 6:   /* left equal right */
+			case 6:	  /* left equal right */
 				return false;
 		}
 	}
@@ -2365,17 +2365,17 @@ gipr_leaf_consistent(IPR_KEY *key,
 	{
 		switch (strategy)
 		{
-			case 1:   /* left contains right nonstrict */
+			case 1:	  /* left contains right nonstrict */
 				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, true);
-			case 2:   /* left contained in right nonstrict */
+			case 2:	  /* left contained in right nonstrict */
 				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, true);
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, false);
-			case 4:   /* left contained in right strict */
+			case 4:	  /* left contained in right strict */
 				return ip4r_contains_internal(&query.ip4r, &key->ipr.ip4r, false);
-			case 5:   /* left overlaps right */
+			case 5:	  /* left overlaps right */
 				return ip4r_overlaps_internal(&key->ipr.ip4r, &query.ip4r);
-			case 6:   /* left equal right */
+			case 6:	  /* left equal right */
 				return ip4r_equal(&key->ipr.ip4r, &query.ip4r);
 		}
 	}
@@ -2383,20 +2383,20 @@ gipr_leaf_consistent(IPR_KEY *key,
 	{
 		switch (strategy)
 		{
-			case 1:   /* left contains right nonstrict */
+			case 1:	  /* left contains right nonstrict */
 				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, true);
-			case 2:   /* left contained in right nonstrict */
+			case 2:	  /* left contained in right nonstrict */
 				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, true);
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, false);
-			case 4:   /* left contained in right strict */
+			case 4:	  /* left contained in right strict */
 				return ip6r_contains_internal(&query.ip6r, &key->ipr.ip6r, false);
-			case 5:   /* left overlaps right */
+			case 5:	  /* left overlaps right */
 				return ip6r_overlaps_internal(&key->ipr.ip6r, &query.ip6r);
-			case 6:   /* left equal right */
+			case 6:	  /* left equal right */
 				return ip6r_equal(&key->ipr.ip6r, &query.ip6r);
 		}
-    }
+	}
 	return false;
 }
 
@@ -2421,7 +2421,7 @@ gipr_internal_consistent(IPR_KEY *key,
 	int af = ipr_unpack(queryp, &query);
 
 #ifdef GIST_QUERY_DEBUG
-    fprintf(stderr, "leaf_consistent, %d\n", strategy);
+	fprintf(stderr, "leaf_consistent, %d\n", strategy);
 #endif
 
 	if (af == 0 && strategy == 4)
@@ -2434,14 +2434,14 @@ gipr_internal_consistent(IPR_KEY *key,
 	{
 		switch (strategy)
 		{
-			case 2:   /* left contained in right nonstrict */
-			case 4:   /* left contained in right strict */
-			case 5:   /* left overlaps right */
+			case 2:	  /* left contained in right nonstrict */
+			case 4:	  /* left contained in right strict */
+			case 5:	  /* left overlaps right */
 				return ip4r_overlaps_internal(&key->ipr.ip4r, &query.ip4r);
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, false);
-			case 1:   /* left contains right nonstrict */
-			case 6:   /* left equal right */
+			case 1:	  /* left contains right nonstrict */
+			case 6:	  /* left equal right */
 				return ip4r_contains_internal(&key->ipr.ip4r, &query.ip4r, true);
 		}
 	}
@@ -2449,17 +2449,17 @@ gipr_internal_consistent(IPR_KEY *key,
 	{
 		switch (strategy)
 		{
-			case 2:   /* left contained in right nonstrict */
-			case 4:   /* left contained in right strict */
-			case 5:   /* left overlaps right */
+			case 2:	  /* left contained in right nonstrict */
+			case 4:	  /* left contained in right strict */
+			case 5:	  /* left overlaps right */
 				return ip6r_overlaps_internal(&key->ipr.ip6r, &query.ip6r);
-			case 3:   /* left contains right strict */
+			case 3:	  /* left contains right strict */
 				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, false);
-			case 1:   /* left contains right nonstrict */
-			case 6:   /* left equal right */
+			case 1:	  /* left contains right nonstrict */
+			case 6:	  /* left equal right */
 				return ip6r_contains_internal(&key->ipr.ip6r, &query.ip6r, true);
 		}
-    }
+	}
 	return false;
 }
 

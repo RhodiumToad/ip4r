@@ -44,7 +44,7 @@ static inline
 Datum
 ipaddr_transform_1d(Datum d, PGFunction ip4func, PGFunction ip6func)
 {
-    IP_P ipp = DatumGetIP_P(d);
+	IP_P ipp = DatumGetIP_P(d);
 	IP ip;
 	int af = ip_unpack(ipp, &ip);
 
@@ -67,7 +67,7 @@ static inline
 IP_P
 ipaddr_transform_1(Datum d, PGFunction ip4func, PGFunction ip6func)
 {
-    IP_P ipp = DatumGetIP_P(d);
+	IP_P ipp = DatumGetIP_P(d);
 	IP ip;
 	int af = ip_unpack(ipp, &ip);
 
@@ -85,7 +85,7 @@ ipaddr_transform_1(Datum d, PGFunction ip4func, PGFunction ip6func)
 			ipaddr_internal_error();
 	}
 
-    return ip_pack(af, &ip);
+	return ip_pack(af, &ip);
 }
 
 
@@ -95,7 +95,7 @@ static inline
 IP_P
 ipaddr_transform_2d(Datum d1, Datum d2, PGFunction ip4func, PGFunction ip6func)
 {
-    IP_P ipp = DatumGetIP_P(d1);
+	IP_P ipp = DatumGetIP_P(d1);
 	IP ip;
 	int af = ip_unpack(ipp, &ip);
 
@@ -113,7 +113,7 @@ ipaddr_transform_2d(Datum d1, Datum d2, PGFunction ip4func, PGFunction ip6func)
 			ipaddr_internal_error();
 	}
 
-    return ip_pack(af, &ip);
+	return ip_pack(af, &ip);
 }
 
 /* func(IP,IP) returns IP; it's an error for the source IPs to be in different families */
@@ -122,8 +122,8 @@ static inline
 IP_P
 ipaddr_transform_2(Datum d1, Datum d2, PGFunction ip4func, PGFunction ip6func)
 {
-    IP_P ipp1 = DatumGetIP_P(d1);
-    IP_P ipp2 = DatumGetIP_P(d2);
+	IP_P ipp1 = DatumGetIP_P(d1);
+	IP_P ipp2 = DatumGetIP_P(d2);
 	IP ip1;
 	IP ip2;
 	IP out;
@@ -149,7 +149,7 @@ ipaddr_transform_2(Datum d1, Datum d2, PGFunction ip4func, PGFunction ip6func)
 			ipaddr_internal_error();
 	}
 
-    return ip_pack(af1, &out);
+	return ip_pack(af1, &out);
 }
 
 
@@ -164,21 +164,21 @@ static
 text *
 make_text(char *str, int len)
 {
-    text *ret = (text *) palloc(len + VARHDRSZ);
-    SET_VARSIZE(ret, len + VARHDRSZ);
-    if (str)
-        memcpy(VARDATA(ret), str, len);
-    else
-        memset(VARDATA(ret), 0, len);
-    return ret;
+	text *ret = (text *) palloc(len + VARHDRSZ);
+	SET_VARSIZE(ret, len + VARHDRSZ);
+	if (str)
+		memcpy(VARDATA(ret), str, len);
+	else
+		memset(VARDATA(ret), 0, len);
+	return ret;
 }
 
 static inline
 void
 set_text_len(text *txt, int len)
 {
-    if ((len + VARHDRSZ) < VARSIZE(txt))
-      SET_VARSIZE(txt, len + VARHDRSZ);
+	if ((len + VARHDRSZ) < VARSIZE(txt))
+	  SET_VARSIZE(txt, len + VARHDRSZ);
 }
 
 
@@ -190,7 +190,7 @@ PG_FUNCTION_INFO_V1(ipaddr_in);
 Datum
 ipaddr_in(PG_FUNCTION_ARGS)
 {
-    char *str = PG_GETARG_CSTRING(0);
+	char *str = PG_GETARG_CSTRING(0);
 	IP ip;
 
 	if (strchr(str,':'))
@@ -204,17 +204,17 @@ ipaddr_in(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET, &ip));
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP value: '%s'", str)));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP value: '%s'", str)));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_out);
 Datum
 ipaddr_out(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
-    char *out = palloc(IP6_STRING_MAX);
+	IP_P ipp = PG_GETARG_IP_P(0);
+	char *out = palloc(IP6_STRING_MAX);
 	IP ip;
 
 	switch (ip_unpack(ipp, &ip))
@@ -227,14 +227,14 @@ ipaddr_out(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    PG_RETURN_CSTRING(out);
+	PG_RETURN_CSTRING(out);
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_recv);
 Datum
 ipaddr_recv(PG_FUNCTION_ARGS)
 {
-    StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
+	StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
 	IP ip;
 	int af, bits, nbytes;
 
@@ -250,7 +250,7 @@ ipaddr_recv(PG_FUNCTION_ARGS)
 		ereturn(fcinfo->context, (Datum)0,
 				(errcode(ERRCODE_INVALID_BINARY_REPRESENTATION),
 				 errmsg("invalid bit length in external IP value")));
-	(void) pq_getmsgbyte(buf);  /* ignore flag */
+	(void) pq_getmsgbyte(buf);	/* ignore flag */
 	nbytes = pq_getmsgbyte(buf);
 	if (nbytes*8 != bits)
 		ereturn(fcinfo->context, (Datum)0,
@@ -276,12 +276,12 @@ PG_FUNCTION_INFO_V1(ipaddr_send);
 Datum
 ipaddr_send(PG_FUNCTION_ARGS)
 {
-    IP_P arg1 = PG_GETARG_IP_P(0);
-    StringInfoData buf;
+	IP_P arg1 = PG_GETARG_IP_P(0);
+	StringInfoData buf;
 	IP ip;
 	int af = ip_unpack(arg1, &ip);
 
-    pq_begintypsend(&buf);
+	pq_begintypsend(&buf);
 	pq_sendbyte(&buf, af);
 	pq_sendbyte(&buf, (int8) ipr_af_maxbits(af));
 	pq_sendbyte(&buf, 1);
@@ -299,36 +299,36 @@ ipaddr_send(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
+	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_hash);
 Datum
 ipaddr_hash(PG_FUNCTION_ARGS)
 {
-    IP_P arg1 = PG_GETARG_IP_P(0);
+	IP_P arg1 = PG_GETARG_IP_P(0);
 
-    return hash_any((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1));
+	return hash_any((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_hash_extended);
 Datum
 ipaddr_hash_extended(PG_FUNCTION_ARGS)
 {
-    IP_P arg1 = PG_GETARG_IP_P(0);
+	IP_P arg1 = PG_GETARG_IP_P(0);
 	uint64 seed = DatumGetUInt64(PG_GETARG_DATUM(1));
 
-    return hash_any_extended((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1), seed);
+	return hash_any_extended((void*)(VARDATA_ANY(arg1)), VARSIZE_ANY_EXHDR(arg1), seed);
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_text);
 Datum
 ipaddr_cast_to_text(PG_FUNCTION_ARGS)
 {
-    IP_P ipp = PG_GETARG_IP_P(0);
+	IP_P ipp = PG_GETARG_IP_P(0);
 	IP ip;
 	int af = ip_unpack(ipp, &ip);
-    text *out = NULL;
+	text *out = NULL;
 
 	switch (af)
 	{
@@ -342,23 +342,23 @@ ipaddr_cast_to_text(PG_FUNCTION_ARGS)
 			break;
 	}
 
-    PG_RETURN_TEXT_P(out);
+	PG_RETURN_TEXT_P(out);
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_from_text);
 Datum
 ipaddr_cast_from_text(PG_FUNCTION_ARGS)
 {
-    text *txt = PG_GETARG_TEXT_PP(0);
-    int tlen = VARSIZE_ANY_EXHDR(txt);
-    char buf[IP6_STRING_MAX];
+	text *txt = PG_GETARG_TEXT_PP(0);
+	int tlen = VARSIZE_ANY_EXHDR(txt);
+	char buf[IP6_STRING_MAX];
 
-    if (tlen < sizeof(buf))
-    {
+	if (tlen < sizeof(buf))
+	{
 		IP ip;
 
-        memcpy(buf, VARDATA_ANY(txt), tlen);
-        buf[tlen] = 0;
+		memcpy(buf, VARDATA_ANY(txt), tlen);
+		buf[tlen] = 0;
 
 		if (strchr(buf,':'))
 		{
@@ -370,19 +370,19 @@ ipaddr_cast_from_text(PG_FUNCTION_ARGS)
 			if (ip4_raw_input(buf, &ip.ip4))
 				PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET, &ip));
 		}
-    }
+	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP value in text")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP value in text")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_from_inet);
 Datum
 ipaddr_cast_from_inet(PG_FUNCTION_ARGS)
 {
-    inet *inetptr = PG_GETARG_INET_P(0);
-    inet_struct *in = INET_STRUCT_DATA(inetptr);
+	inet *inetptr = PG_GETARG_INET_P(0);
+	inet_struct *in = INET_STRUCT_DATA(inetptr);
 	IP ip;
 
 	switch (in->family)
@@ -395,9 +395,9 @@ ipaddr_cast_from_inet(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid INET value for conversion to IP")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid INET value for conversion to IP")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_cidr);
@@ -451,9 +451,9 @@ ipaddr_cast_to_ip4(PG_FUNCTION_ARGS)
 		PG_RETURN_IP4(ip.ip4);
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP value in cast to IP4")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP value in cast to IP4")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_ip6);
@@ -470,9 +470,9 @@ ipaddr_cast_to_ip6(PG_FUNCTION_ARGS)
 		PG_RETURN_IP6_P(out);
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid IP value in cast to IP4")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid IP value in cast to IP4")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_from_bit);
@@ -492,9 +492,9 @@ ipaddr_cast_from_bit(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid BIT value for conversion to IPADDRESS")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid BIT value for conversion to IPADDRESS")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_bit);
@@ -521,9 +521,9 @@ ipaddr_cast_from_bytea(PG_FUNCTION_ARGS)
 			PG_RETURN_IP_P(ip_pack(PGSQL_AF_INET6, &ip));
 	}
 
-    ereturn(fcinfo->context, (Datum)0,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("invalid BYTEA value for conversion to IPADDRESS")));
+	ereturn(fcinfo->context, (Datum)0,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("invalid BYTEA value for conversion to IPADDRESS")));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_cast_to_bytea);
@@ -552,65 +552,65 @@ PG_FUNCTION_INFO_V1(ipaddr_net_lower);
 Datum
 ipaddr_net_lower(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_net_lower, ip6_net_lower));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_net_lower, ip6_net_lower));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_net_upper);
 Datum
 ipaddr_net_upper(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_net_upper, ip6_net_upper));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_net_upper, ip6_net_upper));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_plus_int);
 Datum
 ipaddr_plus_int(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_int, ip6_plus_int));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_int, ip6_plus_int));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_plus_bigint);
 Datum
 ipaddr_plus_bigint(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_bigint, ip6_plus_bigint));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_bigint, ip6_plus_bigint));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_plus_numeric);
 Datum
 ipaddr_plus_numeric(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_numeric, ip6_plus_numeric));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_plus_numeric, ip6_plus_numeric));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_minus_int);
 Datum
 ipaddr_minus_int(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_int, ip6_minus_int));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_int, ip6_minus_int));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_minus_bigint);
 Datum
 ipaddr_minus_bigint(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_bigint, ip6_minus_bigint));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_bigint, ip6_minus_bigint));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_minus_numeric);
 Datum
 ipaddr_minus_numeric(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_numeric, ip6_minus_numeric));
+	PG_RETURN_IP_P(ipaddr_transform_2d(PG_GETARG_DATUM(0), PG_GETARG_DATUM(1), ip4_minus_numeric, ip6_minus_numeric));
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_minus_ipaddr);
 Datum
 ipaddr_minus_ipaddr(PG_FUNCTION_ARGS)
 {
-    Datum minuend = PG_GETARG_DATUM(0);
-    Datum subtrahend = PG_GETARG_DATUM(1);
-    Datum res;
+	Datum minuend = PG_GETARG_DATUM(0);
+	Datum subtrahend = PG_GETARG_DATUM(1);
+	Datum res;
 	IP ip1;
 	IP ip2;
 	int af1 = ip_unpack(DatumGetIP_P(minuend), &ip1);
@@ -639,7 +639,7 @@ ipaddr_minus_ipaddr(PG_FUNCTION_ARGS)
 			ipaddr_internal_error();
 	}
 
-    PG_RETURN_DATUM(res);
+	PG_RETURN_DATUM(res);
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_and);
@@ -684,8 +684,8 @@ ipaddr_comparison_bool(Datum d1, Datum d2,
 					   bool mismatch_af1, bool mismatch_af2,
 					   PGFunction ip4func, PGFunction ip6func)
 {
-    IP_P ipp1 = DatumGetIP_P(d1);
-    IP_P ipp2 = DatumGetIP_P(d2);
+	IP_P ipp1 = DatumGetIP_P(d1);
+	IP_P ipp2 = DatumGetIP_P(d2);
 	IP ip1;
 	IP ip2;
 	int af1 = ip_unpack(ipp1, &ip1);
@@ -718,7 +718,7 @@ ipaddr_comparison_bool(Datum d1, Datum d2,
 	if ((Pointer)ipp2 != DatumGetPointer(d2))
 		pfree(ipp2);
 
-    return retval;
+	return retval;
 }
 
 PG_FUNCTION_INFO_V1(ipaddr_lt);
@@ -783,14 +783,14 @@ ipaddr_neq(PG_FUNCTION_ARGS)
 
 
 /*****************************************************************************
- *                                                 Btree functions
+ *												   Btree functions
  *****************************************************************************/
 
 PG_FUNCTION_INFO_V1(ipaddr_cmp);
 Datum
 ipaddr_cmp(PG_FUNCTION_ARGS)
 {
-    IP_P ipp1 = PG_GETARG_IP_P(0);
+	IP_P ipp1 = PG_GETARG_IP_P(0);
 	IP_P ipp2 = PG_GETARG_IP_P(1);
 	IP ip1;
 	IP ip2;
@@ -822,7 +822,7 @@ ipaddr_cmp(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(ipp1,0);
 	PG_FREE_IF_COPY(ipp2,1);
 
-    PG_RETURN_INT32(retval);
+	PG_RETURN_INT32(retval);
 }
 
 /* end */
