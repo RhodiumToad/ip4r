@@ -18,7 +18,10 @@ jobs:
     strategy:
       matrix:
         pgver:  [ 9.5, 9.6, 10, 11, 12, 13, 14, 15 ]
-        pgrepo: [ "" ]
+        include:
+          - pgrepo: ""
+          - pgver: 16
+            pgrepo: "-snapshot"
 
     env:
       PG:       ${{ matrix.pgver }}
@@ -33,6 +36,7 @@ jobs:
         sudo apt-get -y --purge --no-upgrade remove postgresql libpq-dev libpq5 postgresql-client-common postgresql-common
         curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
         sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" >/etc/apt/sources.list.d/pgdg.list'
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg-snapshot main 16" >/etc/apt/sources.list.d/pgdg-snap.list'
         sudo apt-get update -qq
         sudo rm -rf /var/lib/postgresql
 
@@ -41,7 +45,7 @@ jobs:
         sudo apt-get -y \
                -o Dpkg::Options::=--force-confdef \
                -o Dpkg::Options::=--force-confnew \
-               ${PGREPO:+-t "$PGREPO"} \
+               ${PGREPO:+-t "$(lsb_release -cs)$PGREPO"} \
                install postgresql-${PG:?} postgresql-server-dev-${PG:?}
         sudo -u postgres createuser -s "$USER"
 

@@ -5,7 +5,13 @@ IP4R  - IPv4/v6 and IPv4/v6 range index type for PostgreSQL
 CHANGES in upcoming release
 ===========================
 
- * Support pg 16.
+(Note that no timeframe or version number is decided yet, this
+is work in progress.)
+
+ * Support pg 16, including soft-error handling for input.
+
+ * Check for lower < upper in binary format input and correct
+   if necessary.
 
  * Remove support for some long-obsolete PG versions
 
