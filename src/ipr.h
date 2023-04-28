@@ -2,6 +2,13 @@
 #ifndef IPR_H
 #define IPR_H
 
+#if !defined(PG_VERSION_NUM)
+#error "Unknown or unsupported postgresql version"
+#endif
+#if PG_VERSION_NUM < 90100
+#error "Unknown or unsupported postgresql version"
+#endif
+
 #include <string.h>
 #include <sys/socket.h>
 
@@ -10,11 +17,8 @@
 #include "utils/inet.h"
 #include "utils/palloc.h"
 
-#if !defined(PG_VERSION_NUM)
-#error "Unknown or unsupported postgresql version"
-#endif
-#if PG_VERSION_NUM < 80400
-#error "Unknown or unsupported postgresql version"
+#if PG_VERSION_NUM >= 160000
+#include "varatt.h"
 #endif
 
 #ifndef PGDLLEXPORT
