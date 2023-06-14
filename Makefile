@@ -7,18 +7,12 @@ SRC_SQL	= ip4r--2.4.sql \
 	  ip4r--2.2--2.4.sql \
 	  ip4r--2.1--2.2.sql \
 	  ip4r--2.0--2.1.sql \
-	  ip4r--unpackaged2.1--2.1.sql \
+	  $(if $(call version_ge,$(MAJORVERSION),13),,$(SRC_OLD))
+# "FROM unpackaged" was removed in pg13
+SRC_OLD = ip4r--unpackaged2.1--2.1.sql \
 	  ip4r--unpackaged2.0--2.0.sql \
 	  ip4r--unpackaged1--2.0.sql
 DATA	= $(addprefix scripts/, $(SRC_SQL))
-
-REGRESS = ip4r $(REGRESS_$(MAJORVERSION))
-REGRESS_11 := ip4r-v11
-REGRESS_12 := $(REGRESS_11)
-REGRESS_13 := $(REGRESS_12)
-REGRESS_14 := $(REGRESS_13)
-REGRESS_15 := $(REGRESS_14)
-REGRESS_16 := $(REGRESS_15) ip4r-softerr
 
 objdir	= src
 
@@ -29,6 +23,18 @@ INCS	= ipr.h ipr_internal.h
 
 HEADERS = src/ipr.h
 
+REGRESS = ip4r \
+	  $(REGRESS_BY_VERSION)
+REGRESS_V11 := ip4r-v11
+REGRESS_V16 := ip4r-softerr
+
+define REGRESS_BY_VERSION
+$(strip
+   $(foreach v,$(filter REGRESS_V%,$(.VARIABLES)),
+      $(if $(call version_ge,$(MAJORVERSION),$(subst REGRESS_V,,$(v))),
+           $($(v)))))
+endef
+
 # if VPATH is not already set, but the makefile is not in the current
 # dir, then assume a vpath build using the makefile's directory as
 # source. PGXS will set $(srcdir) accordingly.
@@ -38,11 +44,14 @@ VPATH := $(dir $(firstword $(MAKEFILE_LIST)))
 endif
 endif
 
+mklibdir := $(if $(VPATH),$(VPATH)/tools,tools)
+include $(mklibdir)/numeric.mk
+
 PG_CONFIG ?= pg_config
 PGXS = $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
-ifeq ($(filter-out 7.% 8.% 9.0, $(MAJORVERSION)),)
+ifeq ($(call version_ge,$(MAJORVERSION),9.1),)
 $(error unsupported PostgreSQL version)
 endif
 
@@ -58,3 +67,6 @@ $(OBJS): | vpath-mkdirs
 vpath-mkdirs:
 	$(MKDIR_P) $(objdir)
 endif # VPATH
+
+
+# end
