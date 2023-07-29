@@ -29,10 +29,9 @@ REGRESS_V11 := ip4r-v11
 REGRESS_V16 := ip4r-softerr
 
 define REGRESS_BY_VERSION
-$(strip
-   $(foreach v,$(filter REGRESS_V%,$(.VARIABLES)),
-      $(if $(call version_ge,$(MAJORVERSION),$(subst REGRESS_V,,$(v))),
-           $($(v)))))
+$(strip $(foreach v,$(filter REGRESS_V%,$(.VARIABLES)),
+           $(if $(call version_ge,$(MAJORVERSION),$(subst REGRESS_V,,$(v))),
+                $($(v)))))
 endef
 
 # if VPATH is not already set, but the makefile is not in the current
