@@ -60,7 +60,7 @@ DO $s$
                                  'family(ip4r)'::regprocedure,
                                  'family(ip6r)'::regprocedure))
         LOOP
-          EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
+          EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
         END LOOP;
       END;
     END IF;

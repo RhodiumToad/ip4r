@@ -842,7 +842,7 @@ DO $s$
 			       'family(ip4r)'::regprocedure,
 			       'family(ip6r)'::regprocedure))
       LOOP
-	EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
+	EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
       END LOOP;
     END IF;
     IF pg_ver >= 110000 THEN
@@ -851,10 +851,10 @@ DO $s$
 				   'ip6','ip6r',
 				   'ipaddress','iprange']) u(tname)
       LOOP
-	EXECUTE format('ALTER OPERATOR FAMILY %I USING hash'
+	EXECUTE pg_catalog.format('ALTER OPERATOR FAMILY %I USING hash'
 		       '  ADD FUNCTION 2 %I(%I,bigint)',
-		       format('hash_%s_ops', r.tname),
-		       format('%s_hash_extended', r.tname),
+		       pg_catalog.format('hash_%s_ops', r.tname),
+		       pg_catalog.format('%s_hash_extended', r.tname),
 		       r.tname);
       END LOOP;
       ALTER OPERATOR FAMILY btree_ip4_ops USING btree

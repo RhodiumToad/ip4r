@@ -90,7 +90,7 @@ DO $s$
      WHERE opcname='hash_iprange_ops'
        AND pg_opclass_is_visible(oid);
     -- first check for unknown/unexpected dependencies
-    SELECT format('%s object %s depends on hash_iprange_ops with type ''%s''',
+    SELECT pg_catalog.format('%s object %s depends on hash_iprange_ops with type ''%s''',
                   classid::regclass, objid, deptype)
       INTO str
       FROM pg_depend
@@ -112,7 +112,7 @@ DO $s$
 		     AND deptype = 'n');
     IF deps <> '{}' THEN
       -- we don't expect to find anything except indexes
-      SELECT format('Table %s depends on hash_iprange_ops', oid::regclass)
+      SELECT pg_catalog.format('Table %s depends on hash_iprange_ops', oid::regclass)
         INTO str
         FROM pg_class
        WHERE oid = ANY (deps)
@@ -134,7 +134,7 @@ DO $s$
 		   WHERE i.indexrelid = ANY (deps)
         LOOP
 	  RAISE INFO USING
-	    MESSAGE = format('index %I on table %I.%I depends on hash_iprange_ops',
+	    MESSAGE = pg_catalog.format('index %I on table %I.%I depends on hash_iprange_ops',
 	                     r.indexname, r.schemaname, r.tablename);
 	END LOOP;
         RAISE EXCEPTION dependent_objects_still_exist USING
@@ -156,14 +156,14 @@ DO $s$
 		    JOIN pg_namespace n ON n.oid=ct.relnamespace
 		    WHERE i.indexrelid = ANY (deps);
         ALTER EXTENSION ip4r DROP TABLE ip4r_update_to_2_4.update_indexes;
-	FOR r IN SELECT format('DROP INDEX %s RESTRICT', o::regclass) as cmd
+	FOR r IN SELECT pg_catalog.format('DROP INDEX %s RESTRICT', o::regclass) as cmd
 	           FROM UNNEST(deps) u(o) LOOP
           RAISE INFO 'executing %', r.cmd;
 	  EXECUTE r.cmd;
 	END LOOP;
       ELSIF cfgval = 'rebuild' THEN
         cmds := '{}';
-	FOR r IN SELECT format('DROP INDEX %s RESTRICT', o::regclass) as dropcmd,
+	FOR r IN SELECT pg_catalog.format('DROP INDEX %s RESTRICT', o::regclass) as dropcmd,
 	                pg_get_indexdef(o) as createcmd
 	           FROM UNNEST(deps) u(o) LOOP
           RAISE INFO 'executing %', r.dropcmd;
@@ -210,7 +210,7 @@ DO $s$
 			       'family(ip4r)'::regprocedure,
 			       'family(ip6r)'::regprocedure))
       LOOP
-	EXECUTE format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
+	EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
       END LOOP;
     END IF;
     IF pg_ver >= 110000 THEN
@@ -219,10 +219,10 @@ DO $s$
                                    'ip6','ip6r',
                                    'ipaddress','iprange']) u(tname)
       LOOP
-        EXECUTE format('ALTER OPERATOR FAMILY %I USING hash'
+        EXECUTE pg_catalog.format('ALTER OPERATOR FAMILY %I USING hash'
                        '  ADD FUNCTION 2 %I(%I,bigint)',
-                      format('hash_%s_ops', r.tname),
-                      format('%s_hash_extended', r.tname),
+                      pg_catalog.format('hash_%s_ops', r.tname),
+                      pg_catalog.format('%s_hash_extended', r.tname),
                       r.tname);
       END LOOP;
       ALTER OPERATOR FAMILY btree_ip4_ops USING btree
