@@ -78,7 +78,7 @@ DO $s$
     cfgval text := NULL;
   BEGIN
     BEGIN
-      cfgval := current_setting('ip4r.update_indexes');
+      cfgval := pg_catalog.current_setting('ip4r.update_indexes');
     EXCEPTION WHEN OTHERS THEN
       cfgval := NULL;
     END;
@@ -86,17 +86,17 @@ DO $s$
       cfgval := NULL;
     END IF;
     SELECT oid INTO opc_oid
-      FROM pg_opclass
+      FROM pg_catalog.pg_opclass
      WHERE opcname='hash_iprange_ops'
-       AND pg_opclass_is_visible(oid);
+       AND pg_catalog.pg_opclass_is_visible(oid);
     -- first check for unknown/unexpected dependencies
     SELECT pg_catalog.format('%s object %s depends on hash_iprange_ops with type ''%s''',
                   classid::regclass, objid, deptype)
       INTO str
-      FROM pg_depend
-     WHERE refclassid = 'pg_opclass'::regclass
+      FROM pg_catalog.pg_depend
+     WHERE refclassid OPERATOR(pg_catalog.=) 'pg_opclass'::regclass
        AND refobjid = opc_oid
-       AND classid <> 'pg_class'::regclass
+       AND classid OPERATOR(pg_catalog.<>) 'pg_class'::regclass
        AND deptype NOT IN ('a','i')
      LIMIT 1;
     IF FOUND THEN
@@ -105,16 +105,16 @@ DO $s$
 	DETAIL = str;
     END IF;
     -- find all dependent tables and indexes
-    deps := ARRAY(SELECT objid FROM pg_depend
-                   WHERE refclassid = 'pg_opclass'::regclass
+    deps := ARRAY(SELECT objid FROM pg_catalog.pg_depend
+                   WHERE refclassid OPERATOR(pg_catalog.=) 'pg_opclass'::regclass
 		     AND refobjid = opc_oid
-		     AND classid = 'pg_class'::regclass
+		     AND classid OPERATOR(pg_catalog.=) 'pg_class'::regclass
 		     AND deptype = 'n');
-    IF deps <> '{}' THEN
+    IF deps OPERATOR(pg_catalog.<>) '{}' THEN
       -- we don't expect to find anything except indexes
       SELECT pg_catalog.format('Table %s depends on hash_iprange_ops', oid::regclass)
         INTO str
-        FROM pg_class
+        FROM pg_catalog.pg_class
        WHERE oid = ANY (deps)
          AND relkind <> 'i';
       IF FOUND THEN
@@ -127,10 +127,10 @@ DO $s$
         FOR r IN SELECT ci.relname as indexname,
 	                n.nspname as schemaname,
 			ct.relname as tablename
-	           FROM pg_index i
-		   JOIN pg_class ci ON ci.oid=i.indexrelid
-		   JOIN pg_class ct ON ct.oid=i.indrelid
-		   JOIN pg_namespace n ON n.oid=ct.relnamespace
+	           FROM pg_catalog.pg_index i
+		   JOIN pg_catalog.pg_class ci ON ci.oid=i.indexrelid
+		   JOIN pg_catalog.pg_class ct ON ct.oid=i.indrelid
+		   JOIN pg_catalog.pg_namespace n ON n.oid=ct.relnamespace
 		   WHERE i.indexrelid = ANY (deps)
         LOOP
 	  RAISE INFO USING
@@ -149,26 +149,26 @@ DO $s$
 	            n.nspname as schemaname,
 		    ct.relname as tablename,
 		    ci.relname as indexname,
-		    pg_get_indexdef(ci.oid) as command
-	       FROM pg_index i
-		    JOIN pg_class ci ON ci.oid=i.indexrelid
-		    JOIN pg_class ct ON ct.oid=i.indrelid
-		    JOIN pg_namespace n ON n.oid=ct.relnamespace
+		    pg_catalog.pg_get_indexdef(ci.oid) as command
+	       FROM pg_catalog.pg_index i
+		    JOIN pg_catalog.pg_class ci ON ci.oid=i.indexrelid
+		    JOIN pg_catalog.pg_class ct ON ct.oid=i.indrelid
+		    JOIN pg_catalog.pg_namespace n ON n.oid=ct.relnamespace
 		    WHERE i.indexrelid = ANY (deps);
         ALTER EXTENSION ip4r DROP TABLE ip4r_update_to_2_4.update_indexes;
 	FOR r IN SELECT pg_catalog.format('DROP INDEX %s RESTRICT', o::regclass) as cmd
-	           FROM UNNEST(deps) u(o) LOOP
+	           FROM pg_catalog.unnest(deps) u(o) LOOP
           RAISE INFO 'executing %', r.cmd;
 	  EXECUTE r.cmd;
 	END LOOP;
       ELSIF cfgval = 'rebuild' THEN
         cmds := '{}';
 	FOR r IN SELECT pg_catalog.format('DROP INDEX %s RESTRICT', o::regclass) as dropcmd,
-	                pg_get_indexdef(o) as createcmd
-	           FROM UNNEST(deps) u(o) LOOP
+	                pg_catalog.pg_get_indexdef(o) as createcmd
+	           FROM pg_catalog.unnest(deps) u(o) LOOP
           RAISE INFO 'executing %', r.dropcmd;
 	  EXECUTE r.dropcmd;
-	  cmds := cmds || r.createcmd;
+	  cmds := pg_catalog.array_append(cmds, r.createcmd);
 	END LOOP;
       END IF;
     END IF;
@@ -181,14 +181,14 @@ DO $s$
            OPERATOR 1  = ,
            FUNCTION 1  iprange_hash(iprange);
     IF cmds IS NOT NULL THEN
-      FOR r IN SELECT cmd FROM UNNEST(cmds) u(cmd) LOOP
+      FOR r IN SELECT cmd FROM pg_catalog.unnest(cmds) u(cmd) LOOP
         -- we rely here on CREATE INDEX not recording a dependency on
 	-- the extension
         RAISE INFO 'executing %', r.cmd;
         EXECUTE r.cmd;
       END LOOP;
       RAISE INFO 'index rebuilds completed';
-    ELSIF cfgval = 'drop' AND deps <> '{}' THEN
+    ELSIF cfgval = 'drop' AND deps OPERATOR(pg_catalog.<>) '{}' THEN
       RAISE LOG 'table ip4r_update_to_2_4.update_indexes was created';
       RAISE INFO 'table ip4r_update_to_2_4.update_indexes was created';
     END IF;
@@ -197,7 +197,7 @@ $s$;
 
 DO $s$
   DECLARE
-    pg_ver integer := current_setting('server_version_num')::integer;
+    pg_ver integer := pg_catalog.current_setting('server_version_num')::integer;
     r record;
   BEGIN
     IF pg_ver >= 90600 THEN
@@ -205,19 +205,19 @@ DO $s$
 		 FROM pg_catalog.pg_proc
 		WHERE (probin = 'MODULE_PATHNAME'
 		       AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
-		   OR (oid in ('family(ip4)'::regprocedure,
-			       'family(ip6)'::regprocedure,
-			       'family(ip4r)'::regprocedure,
-			       'family(ip6r)'::regprocedure))
+		   OR (oid in ('family(ip4)'::regprocedure::oid,
+			       'family(ip6)'::regprocedure::oid,
+			       'family(ip4r)'::regprocedure::oid,
+			       'family(ip6r)'::regprocedure::oid))
       LOOP
 	EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
       END LOOP;
     END IF;
     IF pg_ver >= 110000 THEN
       FOR r IN SELECT tname
-                 FROM UNNEST(ARRAY['ip4','ip4r',
-                                   'ip6','ip6r',
-                                   'ipaddress','iprange']) u(tname)
+                 FROM pg_catalog.unnest(ARRAY['ip4','ip4r',
+                                              'ip6','ip6r',
+                                              'ipaddress','iprange']) u(tname)
       LOOP
         EXECUTE pg_catalog.format('ALTER OPERATOR FAMILY %I USING hash'
                        '  ADD FUNCTION 2 %I(%I,bigint)',
