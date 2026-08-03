@@ -12,7 +12,7 @@ WITH v(gname,gtype) AS (
          ('gipr_consistent'::name,  'iprange'::regtype))
 UPDATE pg_catalog.pg_proc
    SET pronargs = 5,
-       proargtypes = array_to_string(array['internal',
+       proargtypes = pg_catalog.array_to_string(array['internal',
                                            v.gtype,
                                            'int2',
                                            'oid',

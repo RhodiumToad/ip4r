@@ -21,7 +21,7 @@ WITH v(gname,gtype) AS (
          ('gipr_consistent'::name,  'iprange'::regtype))
 UPDATE pg_catalog.pg_proc
    SET pronargs = 5,
-       proargtypes = array_to_string(array['internal',
+       proargtypes = pg_catalog.array_to_string(array['internal',
                                            v.gtype,
                                            'int2',
                                            'oid',
@@ -39,7 +39,7 @@ CREATE FUNCTION gipr_fetch(internal) RETURNS internal  AS 'MODULE_PATHNAME' LANG
 
 DO $s$
   BEGIN
-    IF current_setting('server_version_num')::integer >= 90500 THEN
+    IF pg_catalog.current_setting('server_version_num')::integer >= 90500 THEN
       ALTER OPERATOR FAMILY gist_ip4r_ops USING gist ADD
              FUNCTION	9  (ip4r,ip4r)	gip4r_fetch (internal);
       ALTER OPERATOR FAMILY gist_ip6r_ops USING gist ADD
@@ -47,7 +47,7 @@ DO $s$
       ALTER OPERATOR FAMILY gist_iprange_ops USING gist ADD
              FUNCTION	9  (iprange,iprange)	gipr_fetch (internal);
     END IF;
-    IF current_setting('server_version_num')::integer >= 90600 THEN
+    IF pg_catalog.current_setting('server_version_num')::integer >= 90600 THEN
       DECLARE
         r record;
       BEGIN

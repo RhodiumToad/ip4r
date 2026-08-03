@@ -821,7 +821,7 @@ CREATE OPERATOR CLASS gist_iprange_ops DEFAULT FOR TYPE iprange USING gist AS
 
 DO $s$
   DECLARE
-    pg_ver integer := current_setting('server_version_num')::integer;
+    pg_ver integer := pg_catalog.current_setting('server_version_num')::integer;
     r record;
   BEGIN
     IF pg_ver >= 90500 THEN
@@ -847,7 +847,7 @@ DO $s$
     END IF;
     IF pg_ver >= 110000 THEN
       FOR r IN SELECT tname
-		 FROM UNNEST(ARRAY['ip4','ip4r',
+		 FROM pg_catalog.unnest(ARRAY['ip4','ip4r',
 				   'ip6','ip6r',
 				   'ipaddress','iprange']) u(tname)
       LOOP
