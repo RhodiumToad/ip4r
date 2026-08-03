@@ -837,10 +837,10 @@ DO $s$
 		 FROM pg_catalog.pg_proc
 		WHERE (probin = 'MODULE_PATHNAME'
 		       AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
-		   OR (oid in ('family(ip4)'::regprocedure,
-			       'family(ip6)'::regprocedure,
-			       'family(ip4r)'::regprocedure,
-			       'family(ip6r)'::regprocedure))
+		   OR (oid in ('family(ip4)'::regprocedure::oid,
+			       'family(ip6)'::regprocedure::oid,
+			       'family(ip4r)'::regprocedure::oid,
+			       'family(ip6r)'::regprocedure::oid))
       LOOP
 	EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
       END LOOP;
@@ -848,8 +848,8 @@ DO $s$
     IF pg_ver >= 110000 THEN
       FOR r IN SELECT tname
 		 FROM pg_catalog.unnest(ARRAY['ip4','ip4r',
-				   'ip6','ip6r',
-				   'ipaddress','iprange']) u(tname)
+				              'ip6','ip6r',
+				              'ipaddress','iprange']) u(tname)
       LOOP
 	EXECUTE pg_catalog.format('ALTER OPERATOR FAMILY %I USING hash'
 		       '  ADD FUNCTION 2 %I(%I,bigint)',

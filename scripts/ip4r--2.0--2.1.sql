@@ -7,10 +7,10 @@
 
 UPDATE pg_catalog.pg_cast SET castcontext = 'a'
  WHERE (castsource,casttarget) IN (
-        ('ipaddress'::regtype, 'ip4'::regtype),
-        ('ipaddress'::regtype, 'ip6'::regtype),
-        ('iprange'::regtype, 'ip4r'::regtype),
-        ('iprange'::regtype, 'ip6r'::regtype));
+        ('ipaddress'::regtype::oid, 'ip4'::regtype::oid),
+        ('ipaddress'::regtype::oid, 'ip6'::regtype::oid),
+        ('iprange'::regtype::oid, 'ip4r'::regtype::oid),
+        ('iprange'::regtype::oid, 'ip6r'::regtype::oid));
 
 -- double ugh, to finally fix long-standing issue with function signature
 -- of gist consistent functions
@@ -22,11 +22,11 @@ WITH v(gname,gtype) AS (
 UPDATE pg_catalog.pg_proc
    SET pronargs = 5,
        proargtypes = pg_catalog.array_to_string(array['internal',
-                                           v.gtype,
-                                           'int2',
-                                           'oid',
-                                           'internal']::regtype[]::oid[],
-                                     ' ')::pg_catalog.oidvector
+                                                      v.gtype,
+                                                      'int2',
+                                                      'oid',
+                                                      'internal']::regtype[]::oid[],
+                                                ' ')::pg_catalog.oidvector
   FROM v
  WHERE proname = v.gname
    AND probin = 'MODULE_PATHNAME';
@@ -55,10 +55,10 @@ DO $s$
                    FROM pg_catalog.pg_proc
                   WHERE (probin = 'MODULE_PATHNAME'
                          AND prolang = (SELECT oid FROM pg_catalog.pg_language l WHERE l.lanname='c'))
-                     OR (oid in ('family(ip4)'::regprocedure,
-                                 'family(ip6)'::regprocedure,
-                                 'family(ip4r)'::regprocedure,
-                                 'family(ip6r)'::regprocedure))
+                     OR (oid in ('family(ip4)'::regprocedure::oid,
+                                 'family(ip6)'::regprocedure::oid,
+                                 'family(ip4r)'::regprocedure::oid,
+                                 'family(ip6r)'::regprocedure::oid))
         LOOP
           EXECUTE pg_catalog.format('ALTER FUNCTION %s PARALLEL SAFE', r.fsig);
         END LOOP;

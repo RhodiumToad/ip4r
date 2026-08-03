@@ -13,11 +13,11 @@ WITH v(gname,gtype) AS (
 UPDATE pg_catalog.pg_proc
    SET pronargs = 5,
        proargtypes = pg_catalog.array_to_string(array['internal',
-                                           v.gtype,
-                                           'int2',
-                                           'oid',
-                                           'internal']::regtype[]::oid[],
-                                     ' ')::pg_catalog.oidvector
+                                                      v.gtype,
+                                                      'int2',
+                                                      'oid',
+                                                      'internal']::regtype[]::oid[],
+                                                ' ')::pg_catalog.oidvector
   FROM v
  WHERE proname = v.gname
    AND probin = 'MODULE_PATHNAME';
